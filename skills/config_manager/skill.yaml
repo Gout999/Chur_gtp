@@ -1,0 +1,13 @@
+name: config-manager
+description: Configure class settings and agent behavior preferences.
+entry:
+  command: python
+  args:
+    - "{skill_path}/entry.py"
+    - "{args}"
+tools:
+  - teacher_get_config
+  - teacher_update_config
+  - teacher_get_class_config
+  - teacher_update_class_config
+  - teacher_configure_notifications

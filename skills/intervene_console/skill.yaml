@@ -1,0 +1,14 @@
+name: intervene-console
+description: Handle escalations and teacher interventions.
+entry:
+  command: python
+  args:
+    - "{skill_path}/entry.py"
+    - "{args}"
+tools:
+  - teacher_get_escalations
+  - teacher_get_escalation_detail
+  - teacher_respond_to_escalation
+  - teacher_send_message
+  - teacher_pause_companion
+  - teacher_get_conversations
