@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import type { PageType } from '@/types';
 
 interface NavbarProps {
@@ -12,17 +12,28 @@ interface NavbarProps {
 export default function Navbar({ currentPage, onPageChange, isVisible }: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
   // Dynamic navigation items based on current page
   const getNavItems = () => {
     const isTeacher = currentPage === 'teacher-dashboard';
-    return [
-      { label: isTeacher ? '老師' : 'Home', page: (isTeacher ? 'teacher-dashboard' : 'dashboard') as PageType, hasDropdown: true },
-      { label: 'Case Studies', page: 'mistakes' as PageType, hasDropdown: false },
-      { label: 'Insights', page: 'mistakes' as PageType, hasDropdown: false },
-      { label: 'About', page: 'mistakes' as PageType, hasDropdown: false },
-    ];
+    
+    if (isTeacher) {
+      // Teacher Dashboard: Home, Classes, Assignments, Analytics
+      return [
+        { label: 'Home', page: 'home' as PageType },
+        { label: 'Classes', page: 'teacher-classes' as PageType },
+        { label: 'Assignments', page: 'teacher-assignments' as PageType },
+        { label: 'Analytics', page: 'teacher-analytics' as PageType },
+      ];
+    } else {
+      // Student Dashboard: Home, Revision, Homework, Mistakes
+      return [
+        { label: 'Home', page: 'home' as PageType },
+        { label: 'Revision', page: 'revision' as PageType },
+        { label: 'Homework', page: 'homework' as PageType },
+        { label: 'Mistakes', page: 'mistakes' as PageType },
+      ];
+    }
   };
 
   const navItems = getNavItems();
@@ -39,10 +50,7 @@ export default function Navbar({ currentPage, onPageChange, isVisible }: NavbarP
   const handleNavClick = (page: PageType) => {
     onPageChange(page);
     setIsMobileMenuOpen(false);
-    setActiveDropdown(null);
   };
-
-  const getHomePage = () => currentPage === 'teacher-dashboard' ? 'teacher-dashboard' : 'dashboard';
 
   const isOnDashboard = currentPage === 'dashboard' || currentPage === 'teacher-dashboard';
 
@@ -62,76 +70,23 @@ export default function Navbar({ currentPage, onPageChange, isVisible }: NavbarP
           {/* Left Navigation */}
           <div className="hidden md:flex items-center space-x-1">
             {navItems.map((item) => (
-              <div
+              <button
                 key={item.label}
-                className="relative"
-                onMouseEnter={() => item.hasDropdown && setActiveDropdown(item.label)}
-                onMouseLeave={() => setActiveDropdown(null)}
+                onClick={() => handleNavClick(item.page)}
+                className={`px-4 py-2 text-sm font-medium transition-colors duration-200 ${
+                  isScrolled || !isOnDashboard
+                    ? 'text-gray-800 hover:text-[#E91E8C]'
+                    : 'text-white hover:text-[#E91E8C]'
+                }`}
               >
-                <button
-                  onClick={() => handleNavClick(item.page)}
-                  className={`flex items-center px-4 py-2 text-sm font-medium transition-colors duration-200 ${
-                    isScrolled || !isOnDashboard
-                      ? 'text-gray-800 hover:text-[#E91E8C]'
-                      : 'text-white hover:text-[#E91E8C]'
-                  }`}
-                >
-                  {item.label}
-                  {item.hasDropdown && (
-                    <ChevronDown className="ml-1 w-4 h-4" />
-                  )}
-                </button>
-
-                {/* Dropdown */}
-                <AnimatePresence>
-                  {item.hasDropdown && activeDropdown === item.label && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      transition={{ duration: 0.2 }}
-                      className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg py-2"
-                    >
-                      <button
-                        onClick={() => handleNavClick(getHomePage())}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-[#E91E8C]"
-                      >
-                        {currentPage === 'teacher-dashboard' ? '老師' : 'Home'}
-                      </button>
-                      <button
-                        onClick={() => handleNavClick(currentPage === 'teacher-dashboard' ? 'dashboard' : 'teacher-dashboard')}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-[#E91E8C]"
-                      >
-                        {currentPage === 'teacher-dashboard' ? '學生' : '老師'}
-                      </button>
-                      <button
-                        onClick={() => handleNavClick('revision')}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-[#E91E8C]"
-                      >
-                        Revision
-                      </button>
-                      <button
-                        onClick={() => handleNavClick('homework')}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-[#E91E8C]"
-                      >
-                        Homework
-                      </button>
-                      <button
-                        onClick={() => handleNavClick('mistakes')}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-[#E91E8C]"
-                      >
-                        Mistakes
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+                {item.label}
+              </button>
             ))}
           </div>
 
           {/* Center Logo */}
           <button
-            onClick={() => handleNavClick(getHomePage())}
+            onClick={() => handleNavClick('home')}
             className={`text-lg font-medium tracking-wider transition-colors duration-200 ${
               isScrolled || !isOnDashboard
                 ? 'text-gray-900'
@@ -141,7 +96,7 @@ export default function Navbar({ currentPage, onPageChange, isVisible }: NavbarP
             chur-gpt.
           </button>
 
-          {/* Right CTA */}
+          {/* Right CTA - Only show for student dashboard */}
           <div className="hidden md:block">
             <button
               onClick={() => handleNavClick('mistakes')}
