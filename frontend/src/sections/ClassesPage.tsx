@@ -9,9 +9,11 @@ import {
   CheckCircle,
   Download,
   Sparkles,
-  FileText
+  FileText,
+  GraduationCap
 } from 'lucide-react';
 import type { PageType } from '@/types';
+
 
 interface ClassesPageProps {
   onPageChange: (_page: PageType) => void;
@@ -127,10 +129,9 @@ export default function ClassesPage({ onPageChange }: ClassesPageProps) {
 
   const handleUpload = () => {
     setIsUploadModalOpen(false);
-    setIsSuccessModalOpen(true);
     setUploadedFiles([]);
+    onPageChange('ai-enhancement-editor');
   };
-
   const handleDownload = (note: EnhancedNote) => {
     // Simulate file download
     const link = document.createElement('a');
@@ -147,13 +148,20 @@ export default function ClassesPage({ onPageChange }: ClassesPageProps) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.4 }}
-      className="min-h-screen bg-gray-50/50"
+      className="min-h-screen bg-gray-50/50 pt-20"
     >
-      {/* Header - Only page title, no back button */}
+      {/* Header - Page Title with icon */}
       <div className="max-w-[1600px] mx-auto px-6 py-8">
         <div className="mb-8">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-2">Your Teaching Classes</h2>
-          <p className="text-gray-500">Select a class to upload notes and manage study materials</p>
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
+              <GraduationCap className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Class Management</h1>
+              <p className="text-sm text-gray-500">Manage your classes, upload course materials, and view AI-enhanced notes</p>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
