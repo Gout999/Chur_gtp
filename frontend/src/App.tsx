@@ -105,17 +105,22 @@ function App() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
           >
-            {currentPage === 'teacher-dashboard' ? (
-              <TeacherDashboard onPageChange={handlePageChange} />
-            ) : (
-              <HeroSection onPageChange={handlePageChange} />
-            )}
+            // Preload dashboard content - show HeroSection for student flow, TeacherDashboard for teacher flow
+            <div className={currentPage === 'home' ? 'absolute inset-0 opacity-0' : 'absolute inset-0'}>
+              {currentPage === 'teacher-dashboard' ? (
+                <TeacherDashboard onPageChange={handlePageChange} />
+              ) : (
+                <HeroSection onPageChange={handlePageChange} />
+              )}
+            </div>
             <AnimatePresence>
               {currentPage === 'home' && (
                 <motion.div
                   key="startpage"
-                  exit={{ opacity: 0, transition: { duration: 0.8 } }}
+                  initial={{ opacity: 1 }}
+                  exit={{ opacity: 0, transition: { duration: 0.3 } }}
                   className="fixed inset-0 z-50"
+                  style={{ pointerEvents: currentPage !== 'home' ? 'none' : 'auto' }}
                 >
                   <StartPage onPageChange={handlePageChange} />
                 </motion.div>

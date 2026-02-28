@@ -104,7 +104,7 @@ export default function TeacherDashboard({ onPageChange }: TeacherDashboardProps
           transition={{ delay: 0.4, duration: 0.6 }}
           className="text-white text-3xl md:text-4xl lg:text-5xl font-medium tracking-[0.2em] mb-4"
         >
-          CHARLES ELENA.
+          chur-gpt
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, y: 20 }}
@@ -112,7 +112,7 @@ export default function TeacherDashboard({ onPageChange }: TeacherDashboardProps
           transition={{ delay: 0.6, duration: 0.6 }}
           className="text-white/80 text-lg md:text-xl font-light tracking-wide"
         >
-          Do what matters
+          AI-Powered Teaching Platform
         </motion.p>
       </div>
     </div>
