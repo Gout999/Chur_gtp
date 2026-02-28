@@ -13,6 +13,7 @@ import {
   GraduationCap
 } from 'lucide-react';
 import type { PageType } from '@/types';
+import { uploadMaterial } from '@/services/api';
 
 
 interface ClassesPageProps {
@@ -112,6 +113,7 @@ export default function ClassesPage({ onPageChange }: ClassesPageProps) {
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const [enhancedNotes] = useState<EnhancedNote[]>(mockEnhancedNotes);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleClassClick = (classData: ClassData) => {
@@ -127,7 +129,24 @@ export default function ClassesPage({ onPageChange }: ClassesPageProps) {
     }
   };
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
+    if (!fileInputRef.current?.files?.length && uploadedFiles.length === 0) return;
+    setIsUploading(true);
+    try {
+      const files = fileInputRef.current?.files;
+      if (files) {
+        for (let i = 0; i < files.length; i++) {
+          await uploadMaterial(
+            files[i],
+            'teacher-demo',
+            selectedClass?.id,
+            selectedClass?.subject,
+          ).catch(() => {});
+        }
+      }
+    } finally {
+      setIsUploading(false);
+    }
     setIsUploadModalOpen(false);
     setUploadedFiles([]);
     onPageChange('ai-enhancement-editor');

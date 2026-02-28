@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { PageType } from '@/types';
 import { 
@@ -14,7 +14,8 @@ import {
   Edit3,
   Eye,
   ArrowRight,
-  BookOpen
+  BookOpen,
+  X
 } from 'lucide-react';
 import './TeacherAssignmentsPage.css';
 
@@ -634,6 +635,21 @@ interface CreateAssignmentModalProps {
 }
 
 function CreateAssignmentModal({ onClose }: CreateAssignmentModalProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files?.length) {
+      setUploadedFiles(prev => [...prev, ...Array.from(files)]);
+    }
+    e.target.value = '';
+  };
+
+  const removeFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -699,10 +715,37 @@ function CreateAssignmentModal({ onClose }: CreateAssignmentModalProps) {
 
           <div className="form-group">
             <label>Attachments</label>
-            <div className="upload-area">
+            <div
+              role="button"
+              tabIndex={0}
+              className="upload-area"
+              onClick={() => fileInputRef.current?.click()}
+              onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
+            >
               <Upload size={24} />
               <span>Drag files here or click to upload</span>
             </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.txt"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            {uploadedFiles.length > 0 && (
+              <div className="uploaded-files-list">
+                {uploadedFiles.map((file, index) => (
+                  <div key={`${file.name}-${index}`} className="uploaded-file-tag">
+                    <FileText size={14} />
+                    <span className="uploaded-file-name" title={file.name}>{file.name}</span>
+                    <button type="button" className="uploaded-file-remove" onClick={() => removeFile(index)} aria-label="Remove file">
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -722,6 +765,20 @@ interface AIGenerateModalProps {
 
 function AIGenerateModal({ onClose }: AIGenerateModalProps) {
   const [step, setStep] = useState(1);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files?.length) {
+      setUploadedFiles(prev => [...prev, ...Array.from(files)]);
+    }
+    e.target.value = '';
+  };
+
+  const removeFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  };
 
   return (
     <motion.div
@@ -753,11 +810,38 @@ function AIGenerateModal({ onClose }: AIGenerateModalProps) {
                 Upload curriculum documents and let AI generate relevant assignments with questions and knowledge points.
               </p>
 
-              <div className="upload-area large">
+              <div
+                role="button"
+                tabIndex={0}
+                className="upload-area large"
+                onClick={() => fileInputRef.current?.click()}
+                onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
+              >
                 <Upload size={32} />
                 <span>Upload PDF, DOCX, or TXT files</span>
                 <p className="upload-hint">Our AI will analyze the content and generate appropriate questions</p>
               </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept=".pdf,.doc,.docx,.txt"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              {uploadedFiles.length > 0 && (
+                <div className="uploaded-files-list">
+                  {uploadedFiles.map((file, index) => (
+                    <div key={`${file.name}-${index}`} className="uploaded-file-tag">
+                      <FileText size={14} />
+                      <span className="uploaded-file-name" title={file.name}>{file.name}</span>
+                      <button type="button" className="uploaded-file-remove" onClick={() => removeFile(index)} aria-label="Remove file">
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <div className="form-group">
                 <label>Or paste content directly</label>

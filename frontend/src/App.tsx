@@ -19,7 +19,6 @@ import './App.css';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<PageType>('intro');
-  const [isNavVisible, setIsNavVisible] = useState(true);
 
   const handlePageChange = useCallback((page: PageType) => {
     setCurrentPage(page);
@@ -31,14 +30,6 @@ function App() {
       window.history.pushState(null, '', `#/${page}`);
     }
   }, []);
-
-  useEffect(() => {
-    if (currentPage === 'intro' || currentPage === 'home') {
-      setIsNavVisible(false);
-    } else {
-      setIsNavVisible(true);
-    }
-  }, [currentPage]);
 
   useEffect(() => {
     const hash = window.location.hash;
@@ -271,17 +262,20 @@ function App() {
     }
   };
 
+  // 主页和 intro 不显示导航栏；进入学生/教师端后再显示，并分别只能跳转对应三个页面
+  const showNavbar = currentPage !== 'intro' && currentPage !== 'home';
+
   return (
     <div className="min-h-screen bg-white">
-      {currentPage !== 'intro' && currentPage !== 'home' && (
+      {showNavbar && (
         <Navbar
           currentPage={currentPage}
           onPageChange={handlePageChange}
-          isVisible={isNavVisible}
+          isVisible={true}
         />
       )}
       
-      <main className="relative">
+      <main className={`relative ${showNavbar ? 'pt-20' : ''}`}>
         <AnimatePresence mode="wait">
           {renderPage()}
         </AnimatePresence>

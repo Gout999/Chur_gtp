@@ -2,6 +2,7 @@
 import json
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api.v1 import api_router
@@ -44,3 +45,12 @@ async def teacher_api_envelope(request, call_next):
     headers = dict(response.headers)
     headers.pop("content-length", None)
     return JSONResponse(status_code=response.status_code, content=wrapped, headers=headers)
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)

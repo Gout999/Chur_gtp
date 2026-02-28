@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { PageType } from '@/types';
 import { TrendingUp, TrendingDown, Award, BookOpen, Target, Hexagon } from 'lucide-react';
+import { getClassOverview, getClassStudents } from '@/services/api';
 import './TeacherAnalytics.css';
 
 interface TeacherAnalyticsProps {
@@ -431,9 +432,17 @@ export default function TeacherAnalytics({ onPageChange }: TeacherAnalyticsProps
   const [showContent, setShowContent] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('overview');
   const [selectedStudent, setSelectedStudent] = useState<typeof mockData.students[0] | null>(null);
+  const [classOverview, setClassOverview] = useState<{ total_students: number; total_interactions: number; pending_escalations: number; at_risk_students: number } | null>(null);
   const animationRef = useRef<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
   const phaseRef = useRef<TransitionPhase>('idle');
+
+  useEffect(() => {
+    getClassOverview('class-demo')
+      .then(setClassOverview)
+      .catch(() => {});
+    getClassStudents('class-demo').catch(() => {});
+  }, []);
 
   useEffect(() => {
     phaseRef.current = 'expand';

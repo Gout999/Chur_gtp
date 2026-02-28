@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Lightbulb, Sparkles, FileText, Clock, Calculator, FlaskConical, BookOpen, Upload, X, CheckCircle, Trash2, AlertCircle, Target } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Lightbulb, Sparkles, FileText, Clock, Calculator, FlaskConical, BookOpen, Upload, X, CheckCircle, Trash2, AlertCircle, Target } from 'lucide-react';
 import type { PageType } from '@/types';
 import './RevisionPage.css';
 
@@ -88,6 +88,96 @@ const dailyPapers: Note[] = [
   },
 ];
 
+interface NoteReaderViewProps {
+  note: Note;
+  onBack: () => void;
+}
+
+function NoteReaderView({ note, onBack }: NoteReaderViewProps) {
+  const SubjectIcon = subjectIcons[note.subject] || FileText;
+  const isPaper = note.id.startsWith('paper-');
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      transition={{ duration: 0.3 }}
+      className="revision-page"
+    >
+      <main className="page-content">
+        <div className="flex items-center gap-4 mb-6">
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium transition-colors"
+          >
+            <ArrowLeft size={18} />
+            Back to list
+          </button>
+        </div>
+        <motion.article
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className={`note-card ${note.color} ${note.isCustom ? 'custom-note' : ''} ${isPaper ? 'paper-note' : ''} max-w-3xl mx-auto`}
+        >
+          <div className="card-glow" />
+          <div className="card-header">
+            <div className="header-left">
+              <div className="subject-icon-wrapper">
+                <SubjectIcon size={20} />
+              </div>
+              <span className="subject-name">{note.subject}</span>
+            </div>
+            <div className="ai-indicator">
+              {isPaper ? (
+                <>
+                  <Sparkles size={12} />
+                  <span>Daily Rec</span>
+                </>
+              ) : note.isCustom ? (
+                <>
+                  <Upload size={12} />
+                  <span>My Note</span>
+                </>
+              ) : (
+                <>
+                  <Lightbulb size={12} />
+                  <span>AI</span>
+                </>
+              )}
+            </div>
+          </div>
+          <div className="card-body text-left">
+            <h1 className="note-title text-2xl mb-2">{note.title}</h1>
+            <p className="note-description mb-6">{note.description}</p>
+            {note.fileName && (
+              <p className="text-sm text-gray-500 mb-4">File: {note.fileName}</p>
+            )}
+            <div className="border-t border-gray-200/50 pt-6 mt-6">
+              <p className="text-gray-600 leading-relaxed">
+                This is the reading view for &quot;{note.title}&quot;. Content can be loaded from your materials or backend when integrated.
+              </p>
+            </div>
+          </div>
+          <div className="card-footer">
+            <div className="footer-meta">
+              <span className="meta-item">
+                <FileText size={14} />
+                {note.pages} pages
+              </span>
+              <span className="meta-item">
+                <Clock size={14} />
+                {note.updated}
+              </span>
+            </div>
+          </div>
+        </motion.article>
+      </main>
+    </motion.div>
+  );
+}
+
 const recentMistakes = [
   {
     id: 1,
@@ -127,6 +217,7 @@ export default function RevisionPage({ onPageChange }: RevisionPageProps) {
   const [noteSubject, setNoteSubject] = useState('Math');
   const [noteDescription, setNoteDescription] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'collected' | 'papers' | 'mistakes'>('all');
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load saved notes from localStorage on mount
@@ -190,6 +281,7 @@ export default function RevisionPage({ onPageChange }: RevisionPageProps) {
     ? notes.filter(n => n.isCustom)
     : dailyPapers;
 
+  const handleBackFromReader = () => setSelectedNote(null);
 
   return (
     <motion.div
@@ -199,6 +291,18 @@ export default function RevisionPage({ onPageChange }: RevisionPageProps) {
       transition={{ duration: 0.4 }}
       className="revision-page"
     >
+      <AnimatePresence mode="wait">
+        {selectedNote ? (
+          <NoteReaderView key="reader" note={selectedNote} onBack={handleBackFromReader} />
+        ) : (
+          <motion.div
+            key="list"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="w-full"
+          >
       <main className="page-content">
         {/* Hero Section */}
         <section className="hero-section">
@@ -355,7 +459,11 @@ export default function RevisionPage({ onPageChange }: RevisionPageProps) {
                       </span>
                     </div>
                     
-                    <button className="open-btn">
+                    <button
+                      type="button"
+                      className="open-btn"
+                      onClick={() => setSelectedNote(note)}
+                    >
                       <span>Open</span>
                       <ArrowRight size={16} />
                     </button>
@@ -442,6 +550,10 @@ export default function RevisionPage({ onPageChange }: RevisionPageProps) {
 
         </section>
       </main>
+
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Upload Modal */}
       <AnimatePresence>

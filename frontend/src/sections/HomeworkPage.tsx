@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, BookOpen, Video, FileText, ExternalLink, MessageCircle, X, Send, Sparkles, Bot, User } from 'lucide-react';
 import type { PageType } from '@/types';
+import { sendMessage } from '@/services/api';
 import './HomeworkPage.css';
 
 interface HomeworkPageProps {
@@ -107,7 +108,12 @@ export default function HomeworkPage({ onPageChange }: HomeworkPageProps) {
     setInputMessage('');
     setIsTyping(true);
 
-    // Simulate AI response
+    sendMessage({
+      teacher_id: 'teacher-demo',
+      student_id: 'student-demo',
+      content: userMsg.content,
+    }).catch(() => {});
+
     setTimeout(() => {
       const aiResponse: ChatMessage = {
         id: (Date.now() + 1).toString(),

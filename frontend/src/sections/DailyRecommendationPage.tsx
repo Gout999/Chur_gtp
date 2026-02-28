@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Sparkles, FileText, Clock, Calculator, FlaskConical, BookOpen, ArrowRight, Calendar } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Sparkles, FileText, Clock, Calculator, FlaskConical, BookOpen, ArrowRight, Calendar, ArrowLeft } from 'lucide-react';
 import type { PageType } from '@/types';
 import './RevisionPage.css';
 
@@ -95,9 +95,83 @@ const dailyPapers: Paper[] = [
   },
 ];
 
+interface PaperReaderViewProps {
+  paper: Paper;
+  onBack: () => void;
+}
+
+function PaperReaderView({ paper, onBack }: PaperReaderViewProps) {
+  const SubjectIcon = subjectIcons[paper.subject] || FileText;
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      transition={{ duration: 0.3 }}
+      className="revision-page"
+    >
+      <main className="page-content">
+        <div className="flex items-center gap-4 mb-6">
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium transition-colors"
+          >
+            <ArrowLeft size={18} />
+            Back to list
+          </button>
+        </div>
+        <motion.article
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className={`note-card ${paper.color} paper-note max-w-3xl mx-auto`}
+        >
+          <div className="card-glow" />
+          <div className="card-header">
+            <div className="header-left">
+              <div className="subject-icon-wrapper">
+                <SubjectIcon size={20} />
+              </div>
+              <span className="subject-name">{paper.subject}</span>
+            </div>
+            <div className="ai-indicator">
+              <Sparkles size={12} />
+              <span>Daily Rec</span>
+            </div>
+          </div>
+          <div className="card-body text-left">
+            <h1 className="note-title text-2xl mb-2">{paper.title}</h1>
+            <p className="text-sm text-gray-500 mb-4">by {paper.author} · {paper.publishDate}</p>
+            <p className="note-description mb-6">{paper.description}</p>
+            <div className="border-t border-gray-200/50 pt-6 mt-6">
+              <p className="text-gray-600 leading-relaxed">
+                This is the reading view for &quot;{paper.title}&quot;. Content can be loaded from your materials or backend when integrated.
+              </p>
+            </div>
+          </div>
+          <div className="card-footer">
+            <div className="footer-meta">
+              <span className="meta-item">
+                <FileText size={14} />
+                {paper.pages} pages
+              </span>
+              <span className="meta-item">
+                <Clock size={14} />
+                {paper.updated}
+              </span>
+            </div>
+          </div>
+        </motion.article>
+      </main>
+    </motion.div>
+  );
+}
+
 export default function DailyRecommendationPage({ onPageChange }: DailyRecommendationPageProps) {
   const [showName, setShowName] = useState(true);
   const [nameOpacity, setNameOpacity] = useState(0);
+  const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null);
 
   // Initial name display animation
   useEffect(() => {
@@ -120,6 +194,8 @@ export default function DailyRecommendationPage({ onPageChange }: DailyRecommend
     };
   }, []);
 
+  const handleBackFromReader = () => setSelectedPaper(null);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -128,13 +204,25 @@ export default function DailyRecommendationPage({ onPageChange }: DailyRecommend
       transition={{ duration: 0.4 }}
       className="revision-page"
     >
+      <AnimatePresence mode="wait">
+        {selectedPaper ? (
+          <PaperReaderView key="reader" paper={selectedPaper} onBack={handleBackFromReader} />
+        ) : (
+          <motion.div
+            key="list"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="w-full"
+          >
       {/* Initial Name Display Overlay */}
       {showName && (
         <motion.div
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5 }}
-          className="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center"
+          className="fixed inset-0 bg-white z-40 flex flex-col items-center justify-center"
         >
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
@@ -237,7 +325,11 @@ export default function DailyRecommendationPage({ onPageChange }: DailyRecommend
                       </span>
                     </div>
                     
-                    <button className="open-btn">
+                    <button
+                      type="button"
+                      className="open-btn"
+                      onClick={() => setSelectedPaper(paper)}
+                    >
                       <span>Read</span>
                       <ArrowRight size={16} />
                     </button>
@@ -248,6 +340,9 @@ export default function DailyRecommendationPage({ onPageChange }: DailyRecommend
           </div>
         </section>
       </main>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
