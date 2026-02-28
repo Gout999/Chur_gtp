@@ -226,7 +226,7 @@ export default function ExperiencePage({ onPageChange }: ExperiencePageProps) {
   
   // Use onPageChange to avoid TypeScript error
   const handleContactClick = () => {
-    onPageChange('experience');
+    onPageChange('mistakes');
   };
 
   return (

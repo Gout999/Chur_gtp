@@ -2,10 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import HeroSection from '@/sections/HeroSection';
-import CreatePage from '@/sections/CreatePage';
-import GrowPage from '@/sections/GrowPage';
-import ExperiencePage from '@/sections/ExperiencePage';
-import DelightPage from '@/sections/DelightPage';
+import RevisionPage from '@/sections/RevisionPage';
+import HomeworkPage from '@/sections/HomeworkPage';
+import MistakesPage from '@/sections/MistakesPage';
 import type { PageType } from '@/types';
 import './App.css';
 
@@ -55,7 +54,7 @@ function App() {
     const hash = window.location.hash;
     if (hash) {
       const page = hash.replace('#/', '') as PageType;
-      if (['create', 'grow', 'experience', 'delight'].includes(page)) {
+      if (['revision', 'homework', 'mistakes'].includes(page)) {
         setCurrentPage(page);
       }
     }
@@ -67,7 +66,7 @@ function App() {
       const hash = window.location.hash;
       if (hash) {
         const page = hash.replace('#/', '') as PageType;
-        if (['create', 'grow', 'experience', 'delight'].includes(page)) {
+        if (['revision', 'homework', 'mistakes'].includes(page)) {
           setCurrentPage(page);
         } else {
           setCurrentPage('home');
@@ -103,56 +102,43 @@ function App() {
             <HeroSection onPageChange={handlePageChange} />
           </motion.div>
         );
-      case 'create':
+      case 'revision':
         return (
           <motion.div
-            key="create"
+            key="revision"
             variants={pageVariants}
             initial="initial"
             animate="animate"
             exit="exit"
             transition={{ duration: 0.5 }}
           >
-            <CreatePage onPageChange={handlePageChange} />
+            <RevisionPage onPageChange={handlePageChange} />
           </motion.div>
         );
-      case 'grow':
+      case 'homework':
         return (
           <motion.div
-            key="grow"
+            key="homework"
             variants={pageVariants}
             initial="initial"
             animate="animate"
             exit="exit"
             transition={{ duration: 0.5 }}
           >
-            <GrowPage onPageChange={handlePageChange} />
+            <HomeworkPage onPageChange={handlePageChange} />
           </motion.div>
         );
-      case 'experience':
+      case 'mistakes':
         return (
           <motion.div
-            key="experience"
+            key="mistakes"
             variants={pageVariants}
             initial="initial"
             animate="animate"
             exit="exit"
             transition={{ duration: 0.5 }}
           >
-            <ExperiencePage onPageChange={handlePageChange} />
-          </motion.div>
-        );
-      case 'delight':
-        return (
-          <motion.div
-            key="delight"
-            variants={pageVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={{ duration: 0.5 }}
-          >
-            <DelightPage onPageChange={handlePageChange} />
+            <MistakesPage onPageChange={handlePageChange} />
           </motion.div>
         );
       default:
@@ -193,30 +179,24 @@ function App() {
               
               <div className="flex items-center gap-6">
                 <button
-                  onClick={() => handlePageChange('create')}
+                  onClick={() => handlePageChange('revision')}
                   className="text-gray-400 hover:text-white transition-colors"
                 >
-                  Create
+                  Revision
                 </button>
                 <button
-                  onClick={() => handlePageChange('grow')}
+                  onClick={() => handlePageChange('homework')}
                   className="text-gray-400 hover:text-white transition-colors"
                 >
-                  Grow
+                  Homework
                 </button>
                 <button
-                  onClick={() => handlePageChange('experience')}
+                  onClick={() => handlePageChange('mistakes')}
                   className="text-gray-400 hover:text-white transition-colors"
                 >
-                  Experience
+                  Mistakes
                 </button>
-                <button
-                  onClick={() => handlePageChange('delight')}
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  Delight
-                </button>
-              </div>
+                </div>
               
               <div className="text-gray-500 text-sm">
                 © 2024 Charles Elena. All rights reserved.

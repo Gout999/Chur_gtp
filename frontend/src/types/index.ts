@@ -1,4 +1,4 @@
-export type PageType = 'home' | 'create' | 'grow' | 'experience' | 'delight';
+export type PageType = 'home' | 'revision' | 'homework' | 'mistakes';
 
 export interface NavItem {
   label: string;

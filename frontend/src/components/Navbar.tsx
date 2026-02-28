@@ -11,9 +11,9 @@ interface NavbarProps {
 
 const navItems = [
   { label: 'Home', page: 'home' as PageType, hasDropdown: true },
-  { label: 'Case Studies', page: 'experience' as PageType, hasDropdown: false },
-  { label: 'Insights', page: 'experience' as PageType, hasDropdown: false },
-  { label: 'About', page: 'experience' as PageType, hasDropdown: false },
+  { label: 'Case Studies', page: 'mistakes' as PageType, hasDropdown: false },
+  { label: 'Insights', page: 'mistakes' as PageType, hasDropdown: false },
+  { label: 'About', page: 'mistakes' as PageType, hasDropdown: false },
 ];
 
 export default function Navbar({ currentPage, onPageChange, isVisible }: NavbarProps) {
@@ -83,30 +83,24 @@ export default function Navbar({ currentPage, onPageChange, isVisible }: NavbarP
                       className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg py-2"
                     >
                       <button
-                        onClick={() => handleNavClick('create')}
+                        onClick={() => handleNavClick('revision')}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-[#E91E8C]"
                       >
-                        Create
+                        Revision
                       </button>
                       <button
-                        onClick={() => handleNavClick('grow')}
+                        onClick={() => handleNavClick('homework')}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-[#E91E8C]"
                       >
-                        Grow
+                        Homework
                       </button>
                       <button
-                        onClick={() => handleNavClick('experience')}
+                        onClick={() => handleNavClick('mistakes')}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-[#E91E8C]"
                       >
-                        Experience
+                        Mistakes
                       </button>
-                      <button
-                        onClick={() => handleNavClick('delight')}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-[#E91E8C]"
-                      >
-                        Delight
-                      </button>
-                    </motion.div>
+                      </motion.div>
                   )}
                 </AnimatePresence>
               </div>
@@ -128,7 +122,7 @@ export default function Navbar({ currentPage, onPageChange, isVisible }: NavbarP
           {/* Right CTA */}
           <div className="hidden md:block">
             <button
-              onClick={() => handleNavClick('experience')}
+              onClick={() => handleNavClick('mistakes')}
               className="btn-dark text-sm"
             >
               Contact us Today
@@ -174,7 +168,7 @@ export default function Navbar({ currentPage, onPageChange, isVisible }: NavbarP
                 </button>
               ))}
               <button
-                onClick={() => handleNavClick('experience')}
+                onClick={() => handleNavClick('mistakes')}
                 className="btn-dark w-full text-center mt-4"
               >
                 Contact us Today

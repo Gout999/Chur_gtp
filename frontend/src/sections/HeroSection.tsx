@@ -14,19 +14,18 @@ interface ColumnData {
 }
 
 const columns: ColumnData[] = [
-  { id: 'create', label: 'Create', image: '/images/create-bg.jpg', color: 'from-orange-500/20' },
-  { id: 'grow', label: 'Grow', image: '/images/grow-bg.jpg', color: 'from-cyan-500/20' },
-  { id: 'experience', label: 'Experience', image: '/images/experience-bg.jpg', color: 'from-yellow-500/20' },
-  { id: 'delight', label: 'Delight', image: '/images/delight-bg.jpg', color: 'from-pink-500/20' },
+  { id: 'revision', label: 'Revision', image: '/images/create-bg.jpg', color: 'from-orange-500/20' },
+  { id: 'homework', label: 'Homework', image: '/images/grow-bg.jpg', color: 'from-cyan-500/20' },
+  { id: 'mistakes', label: 'Mistakes', image: '/images/experience-bg.jpg', color: 'from-yellow-500/20' },
 ];
 
 export default function HeroSection({ onPageChange }: HeroSectionProps) {
   const [hoveredColumn, setHoveredColumn] = useState<PageType | null>(null);
 
   const getColumnWidth = (columnId: PageType) => {
-    if (!hoveredColumn) return '25%';
-    if (hoveredColumn === columnId) return '40%';
-    return '20%';
+    if (!hoveredColumn) return '33.333%';
+    if (hoveredColumn === columnId) return '50%';
+    return '25%';
   };
 
   return (

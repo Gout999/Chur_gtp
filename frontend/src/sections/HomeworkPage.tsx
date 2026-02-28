@@ -148,7 +148,7 @@ export default function GrowPage({ onPageChange }: GrowPageProps) {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => onPageChange('experience')}
+              onClick={() => onPageChange('mistakes')}
               className="btn-dark inline-flex items-center gap-2"
             >
               Get Started
