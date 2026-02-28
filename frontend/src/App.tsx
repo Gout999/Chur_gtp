@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import HeroSection from '@/sections/HeroSection';
+import TeacherDashboard from '@/sections/TeacherDashboard';
 import StartPage from '@/sections/StartPage';
 import RevisionPage from '@/sections/RevisionPage';
 import HomeworkPage from '@/sections/HomeworkPage';
@@ -57,7 +58,7 @@ function App() {
     const hash = window.location.hash;
     if (hash) {
       const page = hash.replace('#/', '') as PageType;
-      if (['dashboard', 'revision', 'homework', 'mistakes'].includes(page)) {
+      if (['teacher-dashboard', 'dashboard', 'revision', 'homework', 'mistakes', 'teacher-classes', 'teacher-assignments', 'teacher-analytics'].includes(page)) {
         setCurrentPage(page);
       }
     }
@@ -69,7 +70,7 @@ function App() {
       const hash = window.location.hash;
       if (hash) {
         const page = hash.replace('#/', '') as PageType;
-        if (['dashboard', 'revision', 'homework', 'mistakes'].includes(page)) {
+        if (['teacher-dashboard', 'dashboard', 'revision', 'homework', 'mistakes'].includes(page)) {
           setCurrentPage(page);
         } else {
           setCurrentPage('home');
@@ -95,6 +96,7 @@ function App() {
       
             case 'home':
       case 'dashboard':
+      case 'teacher-dashboard':
         return (
           <motion.div
             key="home-dashboard"
@@ -103,7 +105,11 @@ function App() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <HeroSection onPageChange={handlePageChange} />
+            {currentPage === 'teacher-dashboard' ? (
+              <TeacherDashboard onPageChange={handlePageChange} />
+            ) : (
+              <HeroSection onPageChange={handlePageChange} />
+            )}
             <AnimatePresence>
               {currentPage === 'home' && (
                 <motion.div

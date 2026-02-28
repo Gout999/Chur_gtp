@@ -1,4 +1,4 @@
-export type PageType = 'home' | 'dashboard' | 'revision' | 'homework' | 'mistakes';
+export type PageType = 'home' | 'dashboard' | 'teacher-dashboard' | 'revision' | 'homework' | 'mistakes';
 
 export interface NavItem {
   label: string;

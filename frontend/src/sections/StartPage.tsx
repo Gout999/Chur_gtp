@@ -50,8 +50,7 @@ interface StartPageProps {
 
 export default function StartPage({ onPageChange }: StartPageProps) {
   const [objects, setObjects] = useState<FloatingObject[]>([])
-  const [isGridView, setIsGridView] = useState(false)
-  const [hoveredObject, setHoveredObject] = useState<number | null>(null)
+    const [hoveredObject, setHoveredObject] = useState<number | null>(null)
   const [transitionPhase, setTransitionPhase] = useState<TransitionPhase>('idle')
   const [cameraZ, setCameraZ] = useState(0)
   const [whiteOpacity, setWhiteOpacity] = useState(0)
@@ -63,6 +62,7 @@ export default function StartPage({ onPageChange }: StartPageProps) {
   const targetSpeedRef = useRef(1)
   const currentSpeedRef = useRef(1)
   const transitionStartTime = useRef<number | null>(null)
+  const transitionTargetRef = useRef<PageType>('dashboard')
 
   // Initialize floating objects
   useEffect(() => {
@@ -116,11 +116,22 @@ export default function StartPage({ onPageChange }: StartPageProps) {
   }, [handleWheel])
 
   // Start transition to student page
-  const startTransition = useCallback(() => {
+  const studentTransition = useCallback(() => {
     if (transitionPhase !== 'idle') return
+    transitionTargetRef.current = 'dashboard'
     setTransitionPhase('zooming')
     transitionStartTime.current = performance.now()
   }, [transitionPhase])
+
+  // Start transition to teacher dashboard
+  const teacherTransition = useCallback(() => {
+    if (transitionPhase !== 'idle') return
+    transitionTargetRef.current = 'teacher-dashboard'
+    setTransitionPhase('zooming')
+    transitionStartTime.current = performance.now()
+  }, [transitionPhase])
+
+  
 
   // Animation loop
   useEffect(() => {
@@ -181,7 +192,7 @@ export default function StartPage({ onPageChange }: StartPageProps) {
         if (progress >= 1) {
           setTransitionPhase('complete')
           setTimeout(() => {
-            onPageChange('dashboard')
+            onPageChange(transitionTargetRef.current)
           }, 100)
         }
       }
@@ -328,17 +339,17 @@ export default function StartPage({ onPageChange }: StartPageProps) {
       {transitionPhase === 'idle' && (
         <div className="bottom-controls">
           <button 
-            className={`control-btn ${!isGridView ? 'active' : ''}`}
-            onClick={() => setIsGridView(false)}
+            className="control-btn teacher-btn"
+            onClick={teacherTransition}
           >
-            <Layers size={16} />
+            <Layers size={18} />
             <span>老師</span>
           </button>
           <button 
-            className={`control-btn ${isGridView ? 'active' : ''}`}
-            onClick={startTransition}
+            className="control-btn student-btn"
+            onClick={studentTransition}
           >
-            <Grid3X3 size={16} />
+            <Grid3X3 size={18} />
             <span>學生</span>
           </button>
         </div>
