@@ -116,7 +116,7 @@ export default function Navbar({ currentPage, onPageChange, isVisible }: NavbarP
                 : 'text-white'
             }`}
           >
-            CHARLES ELENA.
+            chur-gpt.
           </button>
 
           {/* Right CTA */}
