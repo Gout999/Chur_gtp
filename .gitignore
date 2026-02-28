@@ -13,3 +13,5 @@ venv/
 .vscode/
 *.swp
 *.swo
+node_modules/
+frontend/dist/

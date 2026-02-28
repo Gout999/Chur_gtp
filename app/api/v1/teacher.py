@@ -1,12 +1,17 @@
 """Teacher endpoints."""
+import json
+import os
 from datetime import datetime, timezone
 from typing import Dict, List, Literal, Optional
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from app.core.auth import require_bearer_token
+from app.services.llm_service import generate_lesson_plan_content
+from app.services.ppt_generator import generate_ppt_from_lesson_plan, get_slide_count
 from memory.shared import shared_memory
 
 router = APIRouter(dependencies=[Depends(require_bearer_token)])
@@ -274,6 +279,8 @@ class LessonPlanSection(BaseModel):
     title: str
     duration_minutes: int
     activity: str
+    teaching_method: str = ""
+    expected_outcome: str = ""
 
 
 class LessonPlanResponse(BaseModel):
@@ -909,13 +916,27 @@ def generate_lesson_plan(payload: LessonPlanGenerateRequest) -> LessonPlanRespon
     plan_id = f"plan_{uuid4().hex[:12]}"
     now = _utc_iso()
 
-    topics = payload.topics or ["concept-review", "guided-practice", "reflection"]
+    # AI生成教案内容
+    sections_data = generate_lesson_plan_content(
+        title=payload.title,
+        objective=payload.objective,
+        material_ids=payload.material_ids,
+        topics=payload.topics
+    )
+
+    # 转换为Pydantic模型
     sections = [
-        LessonPlanSection(title=f"Warmup: {topics[0]}", duration_minutes=10, activity="diagnostic questions"),
-        LessonPlanSection(title="Core concept", duration_minutes=20, activity="guided explanation"),
-        LessonPlanSection(title="Practice", duration_minutes=20, activity="pair exercise"),
-        LessonPlanSection(title="Exit ticket", duration_minutes=10, activity="quick assessment"),
+        LessonPlanSection(
+            title=s.get("title", ""),
+            duration_minutes=s.get("duration_minutes", 10),
+            activity=s.get("activity", ""),
+            teaching_method=s.get("teaching_method", ""),
+            expected_outcome=s.get("expected_outcome", "")
+        )
+        for s in sections_data
     ]
+
+    topics = payload.topics or [s.title for s in sections]
 
     shared_memory.write(
         "teacher_lesson_plans",
@@ -932,6 +953,10 @@ def generate_lesson_plan(payload: LessonPlanGenerateRequest) -> LessonPlanRespon
             "version": 1,
             "updated_at": now,
             "deleted": False,
+            "ai_generated": True,
+            "ai_model": "claude-3-haiku-20240307",
+            "generated_at": now,
+            "edited_by_teacher": False,
         },
     )
     return LessonPlanResponse(
@@ -1033,10 +1058,30 @@ def generate_lesson_ppt(plan_id: str, payload: LessonPptGenerateRequest) -> Less
     ppt_id = f"ppt_{uuid4().hex[:12]}"
     now = _utc_iso()
 
+    # 生成真实PPT文件
+    try:
+        file_path = generate_ppt_from_lesson_plan(
+            plan_data=plan,
+            template=payload.template,
+            ppt_id=ppt_id
+        )
+        status = "completed"
+        progress = 100
+        slide_count = get_slide_count(file_path)
+    except Exception as e:
+        # 生成失败
+        file_path = ""
+        status = "failed"
+        progress = 0
+        slide_count = 0
+        print(f"PPT generation failed: {e}")
+
+    # 生成预览图路径
     preview_images = [
-        f"/output/previews/{ppt_id}/slide-1.png",
-        f"/output/previews/{ppt_id}/slide-2.png",
-    ]
+        f"/output/previews/{ppt_id}/slide-{i}.png"
+        for i in range(1, min(slide_count + 1, 6))
+    ] if slide_count > 0 else []
+
     shared_memory.write(
         "generated_ppts",
         ppt_id,
@@ -1045,9 +1090,10 @@ def generate_lesson_ppt(plan_id: str, payload: LessonPptGenerateRequest) -> Less
             "plan_id": plan_id,
             "teacher_id": payload.teacher_id,
             "template": payload.template,
-            "status": "completed",
-            "progress": 100,
-            "file_path": f"/output/ppts/{ppt_id}.pptx",
+            "status": status,
+            "progress": progress,
+            "file_path": file_path,
+            "slide_count": slide_count,
             "download_url": f"/api/v1/teacher/ppt/{ppt_id}/download",
             "preview_images": preview_images,
             "created_at": now,
@@ -1075,15 +1121,29 @@ def get_ppt_status(ppt_id: str) -> PptStatusResponse:
     )
 
 
-@router.get("/ppt/{ppt_id}/download", response_model=PptDownloadResponse)
-def get_ppt_download(ppt_id: str) -> PptDownloadResponse:
+@router.get("/ppt/{ppt_id}/download")
+def download_ppt(ppt_id: str):
+    """Download generated PPT file."""
     entry = shared_memory.read("generated_ppts", ppt_id)
     if not entry:
         raise HTTPException(status_code=404, detail="ppt_not_found")
+
     value = entry.get("value", {})
     if value.get("status") != "completed":
         raise HTTPException(status_code=409, detail="ppt_not_ready")
-    return PptDownloadResponse(ppt_id=ppt_id, download_url=value.get("download_url", ""))
+
+    file_path = value.get("file_path")
+    if not file_path or not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="ppt_file_not_found")
+
+    plan_title = value.get("title", "lesson_plan")
+    safe_title = "".join(c if c.isalnum() or c in (" ", "-", "_") else "_" for c in plan_title)
+
+    return FileResponse(
+        path=file_path,
+        filename=f"{safe_title}_{ppt_id}.pptx",
+        media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    )
 
 
 @router.get("/ppt/{ppt_id}/preview", response_model=PptPreviewResponse)

@@ -138,4 +138,7 @@ def test_teacher_lesson_plan_and_ppt_workflow() -> None:
     assert len(_data(preview)["preview_images"]) >= 1
 
     download = client.get(f"/api/v1/teacher/ppt/{ppt_id}/download", headers=AUTH_HEADERS)
-    assert _data(download)["download_url"].endswith("/download")
+    assert download.status_code == 200
+    # 验证返回的是PPT文件
+    assert download.headers["content-type"] == "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    assert len(download.content) > 1000

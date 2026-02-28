@@ -90,7 +90,10 @@ def test_lesson_plan_ppt_generation_and_access_flow() -> None:
 
     download_resp = client.get(f"/api/v1/teacher/ppt/{ppt_id}/download", headers=AUTH_HEADERS)
     assert download_resp.status_code == 200
-    assert _data(download_resp)["download_url"].endswith("/download")
+    # 验证返回的是PPT文件（二进制内容）
+    assert download_resp.headers["content-type"] == "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    assert len(download_resp.content) > 1000  # PPT文件应该有一定大小
+    assert download_resp.headers["content-disposition"].endswith(".pptx")
 
 
 def test_lesson_template_list_endpoint() -> None:
