@@ -3,7 +3,7 @@
 ## Project Info
 - Project: EduGuide (hackthon teacher branch)
 - Start Date: 2026-02-28
-- Current Session: 6 (Coding Agent)
+- Current Session: 7 (Coding Agent)
 
 ## Completed
 
@@ -114,19 +114,38 @@
   - `feature_list.json`: flipped nine `passes` fields from `false` to `true`.
   - `feature-list.json`: regenerated for installed skill runtime compatibility.
 
+### Session 7 (2026-02-28) - Coding Agent
+- Completed five features:
+  - `Skill manifest and entry for material_manager are runnable and aligned with tool names.`
+  - `Skill manifest and entry for monitor_dashboard are runnable and aligned with tool names.`
+  - `Skill manifest and entry for intervene_console are runnable and aligned with tool names.`
+  - `Skill manifest and entry for config_manager are runnable and aligned with tool names.`
+  - `Skill manifest and entry for lesson_plan_generator are runnable and aligned with tool names.`
+- Added missing skill files:
+  - `skills/config_manager/entry.py`
+  - `skills/lesson_plan_generator/skill.yaml`
+  - `skills/lesson_plan_generator/entry.py`
+- Added integration verification:
+  - `tests/integration/test_teacher_skills_scaffold.py`
+- Regression run result:
+  - `26 passed` across teacher integration suites + baseline architect/memory/e2e tests.
+- Updated status files:
+  - `feature_list.json`: flipped five `passes` fields from `false` to `true`.
+  - `feature-list.json`: regenerated for installed skill runtime compatibility.
+
 ## Metrics
 - Total features: 51
-- Completed: 39
+- Completed: 44
 - In progress: 0
-- Todo: 12
-- Progress: 76%
+- Todo: 7
+- Progress: 86%
 
 ## Session Handoff
 
 ### Current State
 - Branch: teacher
-- Last commit: 91be28d4 - feat(teacher): add config manager APIs and tests; update long-task progress
-- Latest test run: `25 passed` (teacher materials/monitor/intervene/config/lesson integration + architect unit + memory integration + teaching flow e2e smoke)
+- Last commit: 0c5194f2 - feat(teacher): add lesson plan and ppt APIs with integration tests; update long-task progress
+- Latest test run: `26 passed` (teacher materials/monitor/intervene/config/lesson/skills integration + architect unit + memory integration + teaching flow e2e smoke)
 - Long-task state files now exist: yes
 
 ### Risks / Gaps
@@ -138,8 +157,8 @@
 
 ### Recommended Next Session (Coding Agent)
 1. Pick the highest-priority pending feature:
-   `Skill manifest and entry for material_manager are runnable and aligned with tool names.`
-2. Complete and validate all five skill manifests/entries, then update API style/doc tasks.
+   `Teacher API responses follow one consistent envelope schema.`
+2. Apply response envelope + teacher auth dependency and update all integration tests accordingly.
 3. Run baseline regression tests.
 4. Flip exactly one `passes` field to true.
 5. Update this progress file with evidence and next action.
