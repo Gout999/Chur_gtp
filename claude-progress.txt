@@ -3,7 +3,7 @@
 ## Project Info
 - Project: EduGuide (hackthon teacher branch)
 - Start Date: 2026-02-28
-- Current Session: 5 (Coding Agent)
+- Current Session: 6 (Coding Agent)
 
 ## Completed
 
@@ -94,19 +94,39 @@
   - `feature_list.json`: flipped five `passes` fields from `false` to `true`.
   - `feature-list.json`: regenerated for installed skill runtime compatibility.
 
+### Session 6 (2026-02-28) - Coding Agent
+- Completed nine features:
+  - `Lesson plan generation endpoint creates plan draft from goal and materials.`
+  - `Lesson plan detail endpoint fetches one plan by plan_id.`
+  - `Lesson plan update endpoint supports teacher edits and version bump.`
+  - `Lesson plan delete endpoint archives or removes plan safely.`
+  - `PPT generation endpoint creates generated_ppts job and output metadata.`
+  - `PPT status endpoint supports pending/running/completed/failed states.`
+  - `PPT download endpoint returns a stable URL or signed token.`
+  - `PPT preview endpoint returns image list for slideshow preview.`
+  - `Lesson template listing endpoint returns available template metadata.`
+- Added typed lesson-plan and ppt endpoints in `app/api/v1/teacher.py`.
+- Added integration coverage:
+  - `tests/integration/test_teacher_lesson_plan_endpoints.py`
+- Regression run result:
+  - `25 passed` across teacher integration suites + baseline architect/memory/e2e tests.
+- Updated status files:
+  - `feature_list.json`: flipped nine `passes` fields from `false` to `true`.
+  - `feature-list.json`: regenerated for installed skill runtime compatibility.
+
 ## Metrics
 - Total features: 51
-- Completed: 30
+- Completed: 39
 - In progress: 0
-- Todo: 21
-- Progress: 59%
+- Todo: 12
+- Progress: 76%
 
 ## Session Handoff
 
 ### Current State
 - Branch: teacher
-- Last commit: 3373fbd5 - feat(teacher): complete materials monitoring and intervene APIs with tests; update long-task state
-- Latest test run: `22 passed` (teacher materials/monitor/intervene/config integration + architect unit + memory integration + teaching flow e2e smoke)
+- Last commit: 91be28d4 - feat(teacher): add config manager APIs and tests; update long-task progress
+- Latest test run: `25 passed` (teacher materials/monitor/intervene/config/lesson integration + architect unit + memory integration + teaching flow e2e smoke)
 - Long-task state files now exist: yes
 
 ### Risks / Gaps
@@ -118,8 +138,8 @@
 
 ### Recommended Next Session (Coding Agent)
 1. Pick the highest-priority pending feature:
-   `Lesson plan generation endpoint creates plan draft from goal and materials.`
-2. Implement lesson plan + ppt endpoints with in-memory metadata flow and tests.
+   `Skill manifest and entry for material_manager are runnable and aligned with tool names.`
+2. Complete and validate all five skill manifests/entries, then update API style/doc tasks.
 3. Run baseline regression tests.
 4. Flip exactly one `passes` field to true.
 5. Update this progress file with evidence and next action.

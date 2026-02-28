@@ -1,7 +1,7 @@
 {
     "project":  "EduGuide-hackthon-teacher",
     "total_features":  51,
-    "completed":  30,
+    "completed":  39,
     "features":  [
                      {
                          "id":  "F001",
@@ -217,63 +217,63 @@
                          "id":  "F031",
                          "name":  "Lesson plan generation endpoint creates plan draft from goal and materials.",
                          "category":  "functional",
-                         "status":  "pending",
+                         "status":  "completed",
                          "source_index":  31
                      },
                      {
                          "id":  "F032",
                          "name":  "Lesson plan detail endpoint fetches one plan by plan_id.",
                          "category":  "functional",
-                         "status":  "pending",
+                         "status":  "completed",
                          "source_index":  32
                      },
                      {
                          "id":  "F033",
                          "name":  "Lesson plan update endpoint supports teacher edits and version bump.",
                          "category":  "functional",
-                         "status":  "pending",
+                         "status":  "completed",
                          "source_index":  33
                      },
                      {
                          "id":  "F034",
                          "name":  "Lesson plan delete endpoint archives or removes plan safely.",
                          "category":  "functional",
-                         "status":  "pending",
+                         "status":  "completed",
                          "source_index":  34
                      },
                      {
                          "id":  "F035",
                          "name":  "PPT generation endpoint creates generated_ppts job and output metadata.",
                          "category":  "functional",
-                         "status":  "pending",
+                         "status":  "completed",
                          "source_index":  35
                      },
                      {
                          "id":  "F036",
                          "name":  "PPT status endpoint supports pending/running/completed/failed states.",
                          "category":  "functional",
-                         "status":  "pending",
+                         "status":  "completed",
                          "source_index":  36
                      },
                      {
                          "id":  "F037",
                          "name":  "PPT download endpoint returns a stable URL or signed token.",
                          "category":  "functional",
-                         "status":  "pending",
+                         "status":  "completed",
                          "source_index":  37
                      },
                      {
                          "id":  "F038",
                          "name":  "PPT preview endpoint returns image list for slideshow preview.",
                          "category":  "functional",
-                         "status":  "pending",
+                         "status":  "completed",
                          "source_index":  38
                      },
                      {
                          "id":  "F039",
                          "name":  "Lesson template listing endpoint returns available template metadata.",
                          "category":  "functional",
-                         "status":  "pending",
+                         "status":  "completed",
                          "source_index":  39
                      },
                      {
@@ -361,6 +361,6 @@
                          "source_index":  51
                      }
                  ],
-    "created_at":  "2026-02-28T15:47:35.4427855+08:00",
-    "updated_at":  "2026-02-28T15:47:35.4458091+08:00"
+    "created_at":  "2026-02-28T15:50:40.2362405+08:00",
+    "updated_at":  "2026-02-28T15:50:40.2403189+08:00"
 }

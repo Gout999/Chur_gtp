@@ -362,7 +362,7 @@
                       "Step 5: Write plan record into teacher_lesson_plans.",
                       "Step 6: Return plan_id and preview data."
                   ],
-        "passes":  false
+        "passes":  true
     },
     {
         "category":  "functional",
@@ -373,7 +373,7 @@
                       "Step 3: Verify sections, objectives, and metadata.",
                       "Step 4: Verify 404 for missing plan_id."
                   ],
-        "passes":  false
+        "passes":  true
     },
     {
         "category":  "functional",
@@ -385,7 +385,7 @@
                       "Step 4: Persist update with version increment.",
                       "Step 5: Verify updated_at and edited_by fields."
                   ],
-        "passes":  false
+        "passes":  true
     },
     {
         "category":  "functional",
@@ -396,7 +396,7 @@
                       "Step 3: Verify plan is not returned by detail endpoint.",
                       "Step 4: Verify idempotent behavior for repeated delete."
                   ],
-        "passes":  false
+        "passes":  true
     },
     {
         "category":  "functional",
@@ -410,7 +410,7 @@
                       "Step 6: Write generated_ppts entry.",
                       "Step 7: Return ppt_id and polling URL."
                   ],
-        "passes":  false
+        "passes":  true
     },
     {
         "category":  "functional",
@@ -421,7 +421,7 @@
                       "Step 3: Verify status payload includes progress details.",
                       "Step 4: Verify 404 for unknown ppt_id."
                   ],
-        "passes":  false
+        "passes":  true
     },
     {
         "category":  "functional",
@@ -432,7 +432,7 @@
                       "Step 3: Verify response includes downloadable location.",
                       "Step 4: Verify non-completed jobs are rejected."
                   ],
-        "passes":  false
+        "passes":  true
     },
     {
         "category":  "functional",
@@ -443,7 +443,7 @@
                       "Step 3: Verify image URLs and slide order.",
                       "Step 4: Verify empty preview fallback when none exists."
                   ],
-        "passes":  false
+        "passes":  true
     },
     {
         "category":  "functional",
@@ -454,7 +454,7 @@
                       "Step 3: Verify template ids, labels, and preview info.",
                       "Step 4: Verify deterministic ordering."
                   ],
-        "passes":  false
+        "passes":  true
     },
     {
         "category":  "functional",

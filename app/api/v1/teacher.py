@@ -260,6 +260,85 @@ class TeacherNotificationConfigRequest(BaseModel):
     notification_delivery: List[Literal["in_app", "email", "push"]] = Field(min_length=1)
 
 
+class LessonPlanGenerateRequest(BaseModel):
+    teacher_id: str = Field(min_length=1)
+    class_id: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+    objective: str = Field(min_length=1)
+    material_ids: List[str] = Field(default_factory=list)
+    topics: List[str] = Field(default_factory=list)
+
+
+class LessonPlanSection(BaseModel):
+    title: str
+    duration_minutes: int
+    activity: str
+
+
+class LessonPlanResponse(BaseModel):
+    plan_id: str
+    teacher_id: str
+    class_id: str
+    title: str
+    objective: str
+    material_ids: List[str]
+    topics: List[str]
+    sections: List[LessonPlanSection]
+    version: int
+    updated_at: str
+
+
+class LessonPlanUpdateRequest(BaseModel):
+    teacher_id: str = Field(min_length=1)
+    title: Optional[str] = None
+    objective: Optional[str] = None
+    topics: Optional[List[str]] = None
+    sections: Optional[List[LessonPlanSection]] = None
+
+
+class LessonPlanDeleteResponse(BaseModel):
+    plan_id: str
+    deleted: bool
+    deleted_at: str
+
+
+class LessonPptGenerateRequest(BaseModel):
+    teacher_id: str = Field(min_length=1)
+    template: str = Field(default="lesson_default")
+
+
+class LessonPptGenerateResponse(BaseModel):
+    ppt_id: str
+    status: str
+    poll_url: str
+
+
+class PptStatusResponse(BaseModel):
+    ppt_id: str
+    status: str
+    progress: int
+
+
+class PptDownloadResponse(BaseModel):
+    ppt_id: str
+    download_url: str
+
+
+class PptPreviewResponse(BaseModel):
+    ppt_id: str
+    preview_images: List[str]
+
+
+class LessonTemplateItem(BaseModel):
+    template_id: str
+    label: str
+    description: str
+
+
+class LessonTemplatesResponse(BaseModel):
+    templates: List[LessonTemplateItem]
+
+
 def _get_active_material_or_404(material_id: str) -> Dict[str, str]:
     entry = shared_memory.read("teacher_uploads", material_id)
     if not entry:
@@ -812,3 +891,230 @@ def update_teacher_notification_config(
         },
     )
     return TeacherConfigResponse(teacher_id=payload.teacher_id, config=config)
+
+
+def _get_active_lesson_plan_or_404(plan_id: str) -> Dict[str, object]:
+    entry = shared_memory.read("teacher_lesson_plans", plan_id)
+    if not entry:
+        raise HTTPException(status_code=404, detail="lesson_plan_not_found")
+    value = entry.get("value", {})
+    if value.get("deleted"):
+        raise HTTPException(status_code=404, detail="lesson_plan_not_found")
+    return value
+
+
+@router.post("/lesson-plans/generate", response_model=LessonPlanResponse)
+def generate_lesson_plan(payload: LessonPlanGenerateRequest) -> LessonPlanResponse:
+    plan_id = f"plan_{uuid4().hex[:12]}"
+    now = _utc_iso()
+
+    topics = payload.topics or ["concept-review", "guided-practice", "reflection"]
+    sections = [
+        LessonPlanSection(title=f"Warmup: {topics[0]}", duration_minutes=10, activity="diagnostic questions"),
+        LessonPlanSection(title="Core concept", duration_minutes=20, activity="guided explanation"),
+        LessonPlanSection(title="Practice", duration_minutes=20, activity="pair exercise"),
+        LessonPlanSection(title="Exit ticket", duration_minutes=10, activity="quick assessment"),
+    ]
+
+    shared_memory.write(
+        "teacher_lesson_plans",
+        plan_id,
+        {
+            "plan_id": plan_id,
+            "teacher_id": payload.teacher_id,
+            "class_id": payload.class_id,
+            "title": payload.title,
+            "objective": payload.objective,
+            "material_ids": payload.material_ids,
+            "topics": topics,
+            "sections": [section.model_dump() for section in sections],
+            "version": 1,
+            "updated_at": now,
+            "deleted": False,
+        },
+    )
+    return LessonPlanResponse(
+        plan_id=plan_id,
+        teacher_id=payload.teacher_id,
+        class_id=payload.class_id,
+        title=payload.title,
+        objective=payload.objective,
+        material_ids=payload.material_ids,
+        topics=topics,
+        sections=sections,
+        version=1,
+        updated_at=now,
+    )
+
+
+@router.get("/lesson-plans/{plan_id}", response_model=LessonPlanResponse)
+def get_lesson_plan(plan_id: str) -> LessonPlanResponse:
+    plan = _get_active_lesson_plan_or_404(plan_id)
+    return LessonPlanResponse(
+        plan_id=plan["plan_id"],
+        teacher_id=plan["teacher_id"],
+        class_id=plan["class_id"],
+        title=plan["title"],
+        objective=plan["objective"],
+        material_ids=list(plan.get("material_ids", [])),
+        topics=list(plan.get("topics", [])),
+        sections=[LessonPlanSection.model_validate(item) for item in plan.get("sections", [])],
+        version=int(plan.get("version", 1)),
+        updated_at=str(plan.get("updated_at")),
+    )
+
+
+@router.put("/lesson-plans/{plan_id}", response_model=LessonPlanResponse)
+def update_lesson_plan(plan_id: str, payload: LessonPlanUpdateRequest) -> LessonPlanResponse:
+    plan = _get_active_lesson_plan_or_404(plan_id)
+    now = _utc_iso()
+    next_version = int(plan.get("version", 1)) + 1
+
+    merged = {
+        "title": payload.title or plan.get("title", ""),
+        "objective": payload.objective or plan.get("objective", ""),
+        "topics": payload.topics if payload.topics is not None else plan.get("topics", []),
+        "sections": (
+            [section.model_dump() for section in payload.sections]
+            if payload.sections is not None
+            else plan.get("sections", [])
+        ),
+    }
+
+    shared_memory.update(
+        "teacher_lesson_plans",
+        plan_id,
+        {
+            **merged,
+            "version": next_version,
+            "updated_at": now,
+            "edited_by": payload.teacher_id,
+        },
+    )
+
+    updated = _get_active_lesson_plan_or_404(plan_id)
+    return LessonPlanResponse(
+        plan_id=updated["plan_id"],
+        teacher_id=updated["teacher_id"],
+        class_id=updated["class_id"],
+        title=updated["title"],
+        objective=updated["objective"],
+        material_ids=list(updated.get("material_ids", [])),
+        topics=list(updated.get("topics", [])),
+        sections=[LessonPlanSection.model_validate(item) for item in updated.get("sections", [])],
+        version=int(updated.get("version", next_version)),
+        updated_at=str(updated.get("updated_at", now)),
+    )
+
+
+@router.delete("/lesson-plans/{plan_id}", response_model=LessonPlanDeleteResponse)
+def delete_lesson_plan(plan_id: str) -> LessonPlanDeleteResponse:
+    plan = shared_memory.read("teacher_lesson_plans", plan_id)
+    if not plan:
+        raise HTTPException(status_code=404, detail="lesson_plan_not_found")
+
+    value = plan.get("value", {})
+    if value.get("deleted"):
+        return LessonPlanDeleteResponse(plan_id=plan_id, deleted=True, deleted_at=value.get("deleted_at", _utc_iso()))
+
+    now = _utc_iso()
+    shared_memory.update(
+        "teacher_lesson_plans",
+        plan_id,
+        {"deleted": True, "deleted_at": now, "updated_at": now},
+    )
+    return LessonPlanDeleteResponse(plan_id=plan_id, deleted=True, deleted_at=now)
+
+
+@router.post("/lesson-plans/{plan_id}/ppt", response_model=LessonPptGenerateResponse)
+def generate_lesson_ppt(plan_id: str, payload: LessonPptGenerateRequest) -> LessonPptGenerateResponse:
+    plan = _get_active_lesson_plan_or_404(plan_id)
+    ppt_id = f"ppt_{uuid4().hex[:12]}"
+    now = _utc_iso()
+
+    preview_images = [
+        f"/output/previews/{ppt_id}/slide-1.png",
+        f"/output/previews/{ppt_id}/slide-2.png",
+    ]
+    shared_memory.write(
+        "generated_ppts",
+        ppt_id,
+        {
+            "ppt_id": ppt_id,
+            "plan_id": plan_id,
+            "teacher_id": payload.teacher_id,
+            "template": payload.template,
+            "status": "completed",
+            "progress": 100,
+            "file_path": f"/output/ppts/{ppt_id}.pptx",
+            "download_url": f"/api/v1/teacher/ppt/{ppt_id}/download",
+            "preview_images": preview_images,
+            "created_at": now,
+            "updated_at": now,
+            "title": plan.get("title"),
+        },
+    )
+    return LessonPptGenerateResponse(
+        ppt_id=ppt_id,
+        status="completed",
+        poll_url=f"/api/v1/teacher/ppt/{ppt_id}/status",
+    )
+
+
+@router.get("/ppt/{ppt_id}/status", response_model=PptStatusResponse)
+def get_ppt_status(ppt_id: str) -> PptStatusResponse:
+    entry = shared_memory.read("generated_ppts", ppt_id)
+    if not entry:
+        raise HTTPException(status_code=404, detail="ppt_not_found")
+    value = entry.get("value", {})
+    return PptStatusResponse(
+        ppt_id=ppt_id,
+        status=value.get("status", "pending"),
+        progress=int(value.get("progress", 0)),
+    )
+
+
+@router.get("/ppt/{ppt_id}/download", response_model=PptDownloadResponse)
+def get_ppt_download(ppt_id: str) -> PptDownloadResponse:
+    entry = shared_memory.read("generated_ppts", ppt_id)
+    if not entry:
+        raise HTTPException(status_code=404, detail="ppt_not_found")
+    value = entry.get("value", {})
+    if value.get("status") != "completed":
+        raise HTTPException(status_code=409, detail="ppt_not_ready")
+    return PptDownloadResponse(ppt_id=ppt_id, download_url=value.get("download_url", ""))
+
+
+@router.get("/ppt/{ppt_id}/preview", response_model=PptPreviewResponse)
+def get_ppt_preview(ppt_id: str) -> PptPreviewResponse:
+    entry = shared_memory.read("generated_ppts", ppt_id)
+    if not entry:
+        raise HTTPException(status_code=404, detail="ppt_not_found")
+    value = entry.get("value", {})
+    return PptPreviewResponse(
+        ppt_id=ppt_id,
+        preview_images=list(value.get("preview_images", [])),
+    )
+
+
+@router.get("/lesson-templates", response_model=LessonTemplatesResponse)
+def list_lesson_templates() -> LessonTemplatesResponse:
+    return LessonTemplatesResponse(
+        templates=[
+            LessonTemplateItem(
+                template_id="lesson_default",
+                label="Default Lesson",
+                description="Balanced structure for most classes.",
+            ),
+            LessonTemplateItem(
+                template_id="lesson_minimal",
+                label="Minimal",
+                description="Compact slide deck for short sessions.",
+            ),
+            LessonTemplateItem(
+                template_id="lesson_colorful",
+                label="Colorful",
+                description="Visual-heavy template for engagement.",
+            ),
+        ]
+    )
