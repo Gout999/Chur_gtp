@@ -1,0 +1,1 @@
+"""EduGuide FastAPI application package."""

@@ -1,25 +1,26 @@
 """
-EduGuide LangGraph: state definition, node registration, routing.
-PRD §4.1, Phase 1. Only imports agent nodes; no agent business logic here.
+EduGuide LangGraph: state definition, node registration, and routing.
+Only imports agent nodes; no agent business logic belongs here.
 """
-from typing import TypedDict, Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional, TypedDict
 
-# Optional: use LangGraph when available
 try:
-    from langgraph.graph import StateGraph, END
     from langgraph.checkpoint.memory import MemorySaver
+    from langgraph.graph import END, StateGraph
+
     _HAS_LANGGRAPH = True
 except ImportError:
     _HAS_LANGGRAPH = False
-    END = None  # sentinel when LangGraph not installed
+    END = None
 
 from agents.architect import pedagogical_architect_node
-from agents.companion import socratic_companion_node
 from agents.catalyst import curiosity_catalyst_node
+from agents.companion import socratic_companion_node
 
 
 class EduGuideState(TypedDict, total=False):
-    """Shared state across all agents. PRD §4.1."""
+    """Shared state across all agents."""
+
     event_type: str
     event_payload: Dict[str, Any]
     current_agent: str
@@ -35,7 +36,7 @@ class EduGuideState(TypedDict, total=False):
 
 
 def route_by_event_type(state: EduGuideState) -> str:
-    """Route to initial node by event_type. PRD §4.1."""
+    """Route to initial node by event_type."""
     event_type = state.get("event_type", "student_message")
     routing_map = {
         "file_upload": "pedagogical_architect",
@@ -49,7 +50,7 @@ def route_by_event_type(state: EduGuideState) -> str:
 
 
 def route_by_agent_decision(state: EduGuideState) -> str:
-    """Next node from agent_decision. PRD §4.1."""
+    """Route to next node based on agent_decision keywords."""
     decision = state.get("agent_decision", "") or ""
     if "request_validation" in decision:
         return "pedagogical_architect"
@@ -57,26 +58,24 @@ def route_by_agent_decision(state: EduGuideState) -> str:
         return "socratic_companion"
     if "explore_connection" in decision:
         return "curiosity_catalyst"
+    if "monitor_continue" in decision:
+        return "curiosity_catalyst"
     return END
 
 
 def should_continue_monitoring(state: EduGuideState) -> str:
-    """Catalyst self-loop or end. PRD §4.1."""
+    """Catalyst self-loop or end."""
     if state.get("loop_count", 0) > 100:
         return END
     return "curiosity_catalyst"
 
 
 def build_eduguide_graph():
-    """
-    Build the EduGuide graph with three agent nodes and conditional edges.
-    Returns compiled workflow (with checkpointer if LangGraph available).
-    """
+    """Build and compile the EduGuide graph."""
     if not _HAS_LANGGRAPH:
         return None
 
     workflow = StateGraph(EduGuideState)
-
     workflow.add_node("pedagogical_architect", pedagogical_architect_node)
     workflow.add_node("socratic_companion", socratic_companion_node)
     workflow.add_node("curiosity_catalyst", curiosity_catalyst_node)
@@ -101,3 +100,6 @@ def build_eduguide_graph():
 
     memory = MemorySaver()
     return workflow.compile(checkpointer=memory)
+
+
+eduguide_graph = build_eduguide_graph()

@@ -1,16 +1,59 @@
-"""
-EduGuide configuration.
-Load from .env; used by graph, memory, and tools.
-"""
+"""EduGuide runtime configuration loaded from environment variables."""
 import os
+from dataclasses import dataclass
 from pathlib import Path
 
-# Load from .env if present (e.g. via python-dotenv)
 _ENV = os.environ
-
-# API keys and LLM config (set in .env)
-OPENAI_API_KEY = _ENV.get("OPENAI_API_KEY", "")
-ANTHROPIC_API_KEY = _ENV.get("ANTHROPIC_API_KEY", "")
-
-# Optional: project root
 PROJECT_ROOT = Path(__file__).resolve().parent
+
+
+def _env_int(name: str, default: int) -> int:
+    raw = _ENV.get(name)
+    if raw is None:
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        return default
+
+
+@dataclass(frozen=True)
+class Settings:
+    openai_api_key: str
+    anthropic_api_key: str
+    database_url: str
+    redis_url: str
+    chroma_host: str
+    chroma_port: int
+    app_env: str
+    log_level: str
+    secret_key: str
+    github_token: str
+    project_root: Path
+
+
+SETTINGS = Settings(
+    openai_api_key=_ENV.get("OPENAI_API_KEY", ""),
+    anthropic_api_key=_ENV.get("ANTHROPIC_API_KEY", ""),
+    database_url=_ENV.get("DATABASE_URL", "postgresql://user:password@localhost:5432/eduguide"),
+    redis_url=_ENV.get("REDIS_URL", "redis://localhost:6379/0"),
+    chroma_host=_ENV.get("CHROMA_HOST", "localhost"),
+    chroma_port=_env_int("CHROMA_PORT", 8001),
+    app_env=_ENV.get("APP_ENV", "development"),
+    log_level=_ENV.get("LOG_LEVEL", "INFO"),
+    secret_key=_ENV.get("SECRET_KEY", "change-me"),
+    github_token=_ENV.get("GITHUB_TOKEN", ""),
+    project_root=PROJECT_ROOT,
+)
+
+# Backward-compatible module-level constants.
+OPENAI_API_KEY = SETTINGS.openai_api_key
+ANTHROPIC_API_KEY = SETTINGS.anthropic_api_key
+DATABASE_URL = SETTINGS.database_url
+REDIS_URL = SETTINGS.redis_url
+CHROMA_HOST = SETTINGS.chroma_host
+CHROMA_PORT = SETTINGS.chroma_port
+APP_ENV = SETTINGS.app_env
+LOG_LEVEL = SETTINGS.log_level
+SECRET_KEY = SETTINGS.secret_key
+GITHUB_TOKEN = SETTINGS.github_token

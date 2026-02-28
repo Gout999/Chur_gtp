@@ -1,7 +1,14 @@
 """
-EduGuide tools: base registry and agent-specific tools.
-PRD §6: base, ingest, boundary, hints, cognition, arxiv_monitor, github_monitor, briefing.
+EduGuide tools exports.
 """
-from .base import register_tool, execute_tool
+from .base import ToolRegistry, execute_tool, get_tool, list_tools, register_tool, tool, tool_registry
 
-__all__ = ["register_tool", "execute_tool"]
+__all__ = [
+    "ToolRegistry",
+    "tool_registry",
+    "tool",
+    "register_tool",
+    "get_tool",
+    "list_tools",
+    "execute_tool",
+]
