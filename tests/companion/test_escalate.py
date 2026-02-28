@@ -76,6 +76,19 @@ class TestComfortMessages:
         )
         assert r_frust["student_message"] != r_fail["student_message"]
 
+    def test_message_has_comfort_and_teacher_contact(self):
+        """Plan §2: message = comfort first, then 'contact teacher / will help'."""
+        for reason in ("frustration", "repeated_failure", "out_of_scope", "emotional_distress"):
+            result = escalate_to_human(
+                student_id="s1",
+                reason=reason,
+                context_summary=f"Test {reason}",
+                urgency="medium",
+            )
+            msg = result["student_message"]
+            assert "老师" in msg, f"reason={reason} message should mention teacher"
+            assert len(msg.strip()) >= 10, f"reason={reason} message should include comfort + contact"
+
 
 class TestInputValidation:
     """Invalid reason/urgency values from LLM must be normalised, not crash."""

@@ -151,40 +151,48 @@ def _difficulty_from_confidence(confidence: float) -> float:
 # LLM hint generation with template fallback
 # ---------------------------------------------------------------------------
 
+_MAX_FOLLOW_UP_QUESTIONS = 2
+
 _HINT_SYSTEM_PROMPT = """\
 You are a Socratic teaching assistant. Generate a hint for a student who is \
 struggling with a concept. You must NEVER reveal the answer directly.
 
+CRITICAL: The student should see at most 2 questions total (better experience).
+- hint_content: One to three short STATEMENTS only. No question sentences here. \
+  Use only declarative sentences (facts, suggestions, or framing). Do NOT put \
+  any "Can you...?", "What...?", "How...?" in hint_content.
+- follow_up_questions: Put ALL questions here. Use exactly 0, 1, or 2 questions \
+  (no more than 2). These are the only questions the student will see.
+- Prefer hint_content of 2–4 sentences so the reply feels complete and helpful.
+
 Strategy to use: {strategy}
-- socratic: Ask probing questions that guide the student to discover the answer.
-- analogy: Use a familiar analogy to bridge the gap.
-- decompose: Break the problem into smaller, manageable steps.
-- confront: Present a contradiction in the student's reasoning to provoke self-correction.
+- socratic: Statements that frame the concept. Questions only in follow_up_questions.
+- analogy: Statements about a familiar analogy or mapping. Questions only in follow_up_questions.
+- decompose: Statements about the first sub-step. Questions only in follow_up_questions.
+- confront: Statements about a scenario or contradiction. Questions only in follow_up_questions.
 
 Respond in JSON:
 {{"hint_content": "...", "follow_up_questions": ["q1", "q2"], "expected_response_type": "explanation|calculation|verification"}}
 """
 
+# hint_content = 陈述句 only，可稍长（2–4 句）；追问全部放在 follow_up_questions（最多 2 个）
 _TEMPLATE_HINTS: Dict[str, str] = {
     "socratic": (
-        "Let's think about this step by step. "
-        "What do you already know about '{concept}'? "
-        "How does that relate to what you just said: '{input_snippet}'?"
+        "我们一步一步来想。你刚才提到「{input_snippet}」，这和「{concept}」有关。"
+        "先理清你目前对它的理解，再对照一下定义或公式，会更容易发现哪里需要调整。"
     ),
     "decompose": (
-        "This is a complex question — let's break it down. "
-        "First, can you tell me the definition of '{concept}'? "
-        "Once we nail that, we'll tackle the next piece."
+        "这道题可以拆成几步来做。先搞清楚「{concept}」的定义和适用条件，"
+        "再往下推会容易很多。你可以先写出第一步，再想下一步。"
     ),
     "analogy": (
-        "Imagine '{concept}' is like something from everyday life. "
-        "Can you think of a real-world situation that behaves the same way? "
-        "How would you explain it to a friend?"
+        "「{concept}」可以类比成生活中的情境。"
+        "想一个你熟悉的现象，和它的行为很像，用这个类比来对照你刚才的想法，会帮助理解。"
     ),
     "confront": (
-        "You said: '{input_snippet}'. "
-        "But consider this: if that were true, what would happen in "
-        "the following scenario? Think about whether your reasoning still holds."
+        "你刚才说「{input_snippet}」。"
+        "可以试想：如果这样成立，在另一种情形下会怎样？看看你的推理是否还成立。"
+        "这样能帮你发现哪里需要修正。"
     ),
 }
 
@@ -214,6 +222,7 @@ def _llm_generate_hint(
     target_concept: str,
     error_analysis: Dict[str, Any],
     misconceptions: List[Dict[str, Any]],
+    teacher_knowledge_chunks: Optional[List[Dict[str, Any]]] = None,
 ) -> Optional[Dict[str, Any]]:
     """Try generating a hint via OpenAI. Returns None on any failure."""
     try:
@@ -229,8 +238,22 @@ def _llm_generate_hint(
         m.get("pattern", "") for m in relevant[-3:]
     ) or "none recorded"
 
+    knowledge_block = ""
+    if teacher_knowledge_chunks:
+        lines = [
+            f"- {c.get('content', '')} [source: {c.get('source', '')}]"
+            for c in teacher_knowledge_chunks
+        ]
+        knowledge_block = (
+            "\nBase your hint ONLY on the following teacher knowledge. "
+            "Do not invent facts outside these snippets:\n"
+            + "\n".join(lines)
+            + "\n\n"
+        )
+
     user_msg = (
-        f"Concept: {target_concept}\n"
+        knowledge_block
+        + f"Concept: {target_concept}\n"
         f"Student said: {current_input}\n"
         f"Error analysis: {json.dumps(error_analysis, ensure_ascii=False)}\n"
         f"Known misconceptions: {misconception_text}"
@@ -245,7 +268,7 @@ def _llm_generate_hint(
                 {"role": "user", "content": user_msg},
             ],
             temperature=0.7,
-            max_tokens=400,
+            max_tokens=520,
             response_format={"type": "json_object"},
         )
         raw = resp.choices[0].message.content or "{}"
@@ -290,6 +313,7 @@ def construct_hint(
     current_input: str,
     target_concept: str,
     error_analysis: Optional[Dict[str, Any]] = None,
+    teacher_knowledge_chunks: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
     """
     Build a personalised hint based on error patterns and student profile.
@@ -319,12 +343,16 @@ def construct_hint(
 
     llm_result = _llm_generate_hint(
         strategy, current_input, target_concept, analysis, misconceptions,
+        teacher_knowledge_chunks=teacher_knowledge_chunks,
     )
     if llm_result is not None and not _contains_direct_answer(
         llm_result.get("hint_content", ""),
     ):
         hint_content = llm_result["hint_content"]
-        follow_ups = llm_result.get("follow_up_questions", [])
+        raw_follow_ups = llm_result.get("follow_up_questions") or []
+        if isinstance(raw_follow_ups, str):
+            raw_follow_ups = [raw_follow_ups] if raw_follow_ups else []
+        follow_ups = list(raw_follow_ups)[: _MAX_FOLLOW_UP_QUESTIONS]
         resp_type = llm_result.get("expected_response_type", "explanation")
     else:
         if llm_result is not None:
@@ -333,7 +361,7 @@ def construct_hint(
             )
         tmpl = _template_hint(strategy, current_input, target_concept)
         hint_content = tmpl["hint_content"]
-        follow_ups = tmpl["follow_up_questions"]
+        follow_ups = tmpl["follow_up_questions"][: _MAX_FOLLOW_UP_QUESTIONS]
         resp_type = tmpl["expected_response_type"]
 
     confidence = concept_entry.get("confidence", 0.5)
@@ -360,10 +388,22 @@ def construct_hint(
 # ---------------------------------------------------------------------------
 
 _ESCALATION_MESSAGES: Dict[str, str] = {
-    "frustration": "我理解你现在有点困惑，让我帮你联系老师来一起看看。",
-    "repeated_failure": "这个问题确实有难度，我已经通知老师来帮助你了。",
-    "out_of_scope": "这个问题超出了当前课程范围，我帮你记下来让老师回头解答。",
-    "emotional_distress": "没关系，学习就是一步步来的，老师很快会来和你聊聊。",
+    "frustration": (
+        "这道题确实不容易，卡住很正常。"
+        "我已经帮你联系老师了，老师会来和你一起看的。"
+    ),
+    "repeated_failure": (
+        "这个问题确实有难度，你已经很努力了。"
+        "我已经通知老师来帮助你了，老师很快就会来。"
+    ),
+    "out_of_scope": (
+        "这个问题很有深度，目前课程里还没讲到。"
+        "我帮你记下来了，老师回头会给你解答的。"
+    ),
+    "emotional_distress": (
+        "没关系，学习就是一步步来的，有情绪很正常。"
+        "老师很快会来和你聊聊，会帮你的。"
+    ),
 }
 
 _URGENCY_RESPONSE_TIMES: Dict[str, str] = {
