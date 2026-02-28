@@ -136,7 +136,7 @@ Agent 间仅通过 **memory/shared** 的 namespace 读写协作，不直接依�
 | Namespace | 写入方 | 读取方 | 用途 |
 |-----------|--------|--------|------|
 | `teacher_authority_graph` | Architect（tools/boundary.py、ingest 结果） | Companion | 知识边界、知识节点、约束 |
-| `interest_signals` | Companion（学生新兴趣） | Catalyst | 扩展监控域、个性化简报 |
+| `interest_signals` | Catalyst（学生上传 PDF/Word 分析得出兴趣） | Catalyst | 扩展监控域、个性化简报 |
 | `pending_validations` | Catalyst（待审核内容） | Architect | 审核后写回，Catalyst 再决定是否推送 |
 
 具体 key / value 结构见 `memory/shared.py` 的 docstring 或项目内 `docs/contracts.md`（若创建）。

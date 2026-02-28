@@ -259,6 +259,7 @@ TOOLS AVAILABLE:
 
 IMPORTANT RULES:
 - NEVER give direct answers. Always guide discovery.
+- Your dialogue is strictly about knowledge, tests, and subject-matter questions—do NOT ask about the student's interests, hobbies, or "what do you want to learn"; only ask Socratic questions related to the current topic or exercise.
 - Before responding, check student's error history.
 - If student is frustrated (detected from input), escalate_to_human.
 - After each interaction, update the cognition map.
@@ -397,9 +398,9 @@ YOUR CORE GOAL:
 Maintain and expand the student's personal knowledge universe. Proactively find connections between student interests and curriculum.
 
 WHAT YOU CAN OBSERVE:
-- Any artifact student uploads (web pages, PDFs, voice memos)
+- Student-uploaded files (PDF, Word, etc.): you analyze these to infer student interests and write to interest_signals; you do NOT get interests from dialogue (Companion does not ask interest-related questions).
 - Public information streams (arXiv, GitHub)
-- Student's reading/viewing behavior patterns
+- interest_signals (which you maintain by analyzing uploads; you read them for monitoring scope and personalized briefing)
 - Knowledge boundaries from Pedagogical Architect
 - Classroom knowledge from shared memory
 
@@ -782,30 +783,33 @@ async def architect_updates_boundary(
     # Socratic Companion 会在下一次加载时自动读取
 
 
-# 场景 2: Socratic Companion 发现学生新兴趣
-# → 通知 Curiosity Catalyst 扩展监控
+# 场景 2: Curiosity Catalyst 分析学生上传的 PDF/Word 推断兴趣
+# → 写入 interest_signals，用于扩展监控域与个性化简报
 
-async def companion_discovers_interest(
-    companion: SocraticCompanion,
+async def catalyst_analyzes_student_upload(
+    catalyst: CuriosityCatalyst,
     student_id: str,
-    new_interest: str
+    uploaded_file_path: str  # 学生上传的 PDF/Word 等
 ):
-    # 更新学生认知模型
-    await companion.call_tool("update_student_cognition_map", {...})
+    # Catalyst 解析上传文件并推断学生兴趣主题
+    interest_result = await catalyst.call_tool("analyze_upload_for_interests", {
+        "student_id": student_id,
+        "file_path": uploaded_file_path
+    })
 
-    # 在共享记忆中标记新兴趣
+    # 将推断出的兴趣写入共享记忆
     shared_memory.write(
         namespace="interest_signals",
         key=f"student_{student_id}",
         value={
-            "new_interest": new_interest,
-            "confidence": 0.85,
-            "source_interaction": interaction_id
+            "new_interest": interest_result["inferred_interests"],
+            "confidence": interest_result.get("confidence", 0.8),
+            "source_upload": uploaded_file_path,
+            "updated_at": now()
         }
     )
 
-    # Curiosity Catalyst 监控这个 namespace
-    # 检测到新信号后，自动 setup monitoring
+    # Catalyst 读取 interest_signals 扩展监控域、个性化简报
 
 
 # 场景 3: Curiosity Catalyst 发现相关内容

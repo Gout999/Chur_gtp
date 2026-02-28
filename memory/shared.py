@@ -21,7 +21,7 @@ NAMESPACES: Dict[str, str] = {
     "interaction_episodes": "Agent interaction episodes.",
     "pending_escalations": "Escalations waiting for teacher handling.",
     "pending_validations": "Catalyst outputs waiting for Architect validation.",
-    "interest_signals": "Student interest signals.",
+    "interest_signals": "Catalyst: student interests inferred from uploaded PDF/Word; Catalyst reads for monitoring and briefing.",
     "companion_control": "Companion control instructions.",
 }
 
