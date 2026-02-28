@@ -1,0 +1,196 @@
+# Long Task Progress Log
+
+## Project Info
+- Project: EduGuide (hackthon teacher branch)
+- Start Date: 2026-02-28
+- Current Session: 8 (Coding Agent)
+
+## Completed
+
+### Session 1 (2026-02-28) - Initializer
+- Created `app_spec.txt` aligned with current codebase status and PRD scope.
+- Created `feature_list.json` with 51 prioritized items:
+  - 7 baseline items marked done (`passes: true`) based on current validated framework state.
+  - 44 teacher-side items pending (`passes: false`).
+- Created `init.sh` for reproducible environment bootstrap and baseline test run.
+- Created this `claude-progress.txt` for cross-session handoff.
+
+### Session 2 (2026-02-28) - Coding Agent
+- Completed one feature:
+  - `Teacher material upload endpoint persists upload metadata into teacher_uploads namespace.`
+- Implemented `POST /api/v1/teacher/materials/upload` with typed request/response schema.
+- Endpoint now writes uploaded material metadata into `teacher_uploads` using `material_id` key.
+- Added integration test:
+  - `tests/integration/test_teacher_material_upload.py`
+- Regression run result:
+  - `4 passed` across new upload integration + baseline architect/memory/e2e tests.
+- Updated status files:
+  - `feature_list.json`: flipped exactly one `passes` from `false` to `true`.
+  - `feature-list.json`: regenerated for installed skill runtime compatibility.
+
+### Session 3 (2026-02-28) - Coding Agent
+- Completed five features:
+  - `Teacher material status endpoint returns parse/index status by material_id.`
+  - `Teacher boundary adjustment endpoint records strictness updates.`
+  - `Teacher importance marking endpoint stores concept importance signals.`
+  - `Teacher knowledge-graph endpoint returns authority graph fragments for a material.`
+  - `Teacher material delete endpoint removes material metadata and related marks.`
+- Added typed endpoints under `app/api/v1/teacher.py`:
+  - `GET /api/v1/teacher/materials/{material_id}/status`
+  - `PUT /api/v1/teacher/materials/{material_id}/boundary`
+  - `PUT /api/v1/teacher/materials/{material_id}/importance`
+  - `GET /api/v1/teacher/materials/{material_id}/knowledge-graph`
+  - `DELETE /api/v1/teacher/materials/{material_id}`
+- Added/expanded integration coverage in:
+  - `tests/integration/test_teacher_material_upload.py`
+- Regression run result:
+  - `9 passed` across teacher materials integration + baseline architect/memory/e2e tests.
+- Updated status files:
+  - `feature_list.json`: flipped five `passes` fields from `false` to `true`.
+  - `feature-list.json`: regenerated for installed skill runtime compatibility.
+
+### Session 4 (2026-02-28) - Coding Agent
+- Completed twelve features:
+  - `Class overview endpoint returns aggregate stats for a class.`
+  - `Class student list endpoint returns roster with learning indicators.`
+  - `Student detail endpoint returns profile and current learning state.`
+  - `Student cognition endpoint maps shared cognitive model to teacher response schema.`
+  - `Agent logs endpoint returns decision and tool traces for a student.`
+  - `Interaction history endpoint supports filters for date range and topic.`
+  - `Escalation list endpoint reads pending_escalations and returns teacher queue.`
+  - `Escalation detail endpoint returns one escalation with interaction context.`
+  - `Escalation response endpoint stores teacher decision and clears pending item.`
+  - `Teacher send-message endpoint writes directed messages to teacher_student_messages.`
+  - `Conversation endpoint returns student conversation history including teacher inserts.`
+  - `Companion pause/resume endpoint updates companion_control namespace.`
+- Added typed monitoring/intervention endpoints in `app/api/v1/teacher.py`.
+- Added integration coverage:
+  - `tests/integration/test_teacher_monitor_endpoints.py`
+  - `tests/integration/test_teacher_intervene_endpoints.py`
+- Regression run result:
+  - `18 passed` across teacher integration suites + baseline architect/memory/e2e tests.
+- Updated status files:
+  - `feature_list.json`: flipped twelve `passes` fields from `false` to `true`.
+  - `feature-list.json`: regenerated for installed skill runtime compatibility.
+
+### Session 5 (2026-02-28) - Coding Agent
+- Completed five features:
+  - `Teacher global config GET endpoint returns defaults when no explicit config exists.`
+  - `Teacher global config PUT endpoint validates and persists values.`
+  - `Class-specific config GET endpoint resolves overrides over global defaults.`
+  - `Class-specific config PUT endpoint stores override payload by class_id.`
+  - `Notification preference endpoint updates delivery and threshold settings.`
+- Added typed config endpoints in `app/api/v1/teacher.py`:
+  - `GET /api/v1/teacher/config`
+  - `PUT /api/v1/teacher/config`
+  - `GET /api/v1/teacher/classes/{class_id}/config`
+  - `PUT /api/v1/teacher/classes/{class_id}/config`
+  - `PUT /api/v1/teacher/config/notifications`
+- Added integration coverage:
+  - `tests/integration/test_teacher_config_endpoints.py`
+- Regression run result:
+  - `22 passed` across teacher integration suites + baseline architect/memory/e2e tests.
+- Updated status files:
+  - `feature_list.json`: flipped five `passes` fields from `false` to `true`.
+  - `feature-list.json`: regenerated for installed skill runtime compatibility.
+
+### Session 6 (2026-02-28) - Coding Agent
+- Completed nine features:
+  - `Lesson plan generation endpoint creates plan draft from goal and materials.`
+  - `Lesson plan detail endpoint fetches one plan by plan_id.`
+  - `Lesson plan update endpoint supports teacher edits and version bump.`
+  - `Lesson plan delete endpoint archives or removes plan safely.`
+  - `PPT generation endpoint creates generated_ppts job and output metadata.`
+  - `PPT status endpoint supports pending/running/completed/failed states.`
+  - `PPT download endpoint returns a stable URL or signed token.`
+  - `PPT preview endpoint returns image list for slideshow preview.`
+  - `Lesson template listing endpoint returns available template metadata.`
+- Added typed lesson-plan and ppt endpoints in `app/api/v1/teacher.py`.
+- Added integration coverage:
+  - `tests/integration/test_teacher_lesson_plan_endpoints.py`
+- Regression run result:
+  - `25 passed` across teacher integration suites + baseline architect/memory/e2e tests.
+- Updated status files:
+  - `feature_list.json`: flipped nine `passes` fields from `false` to `true`.
+  - `feature-list.json`: regenerated for installed skill runtime compatibility.
+
+### Session 7 (2026-02-28) - Coding Agent
+- Completed five features:
+  - `Skill manifest and entry for material_manager are runnable and aligned with tool names.`
+  - `Skill manifest and entry for monitor_dashboard are runnable and aligned with tool names.`
+  - `Skill manifest and entry for intervene_console are runnable and aligned with tool names.`
+  - `Skill manifest and entry for config_manager are runnable and aligned with tool names.`
+  - `Skill manifest and entry for lesson_plan_generator are runnable and aligned with tool names.`
+- Added missing skill files:
+  - `skills/config_manager/entry.py`
+  - `skills/lesson_plan_generator/skill.yaml`
+  - `skills/lesson_plan_generator/entry.py`
+- Added integration verification:
+  - `tests/integration/test_teacher_skills_scaffold.py`
+- Regression run result:
+  - `26 passed` across teacher integration suites + baseline architect/memory/e2e tests.
+- Updated status files:
+  - `feature_list.json`: flipped five `passes` fields from `false` to `true`.
+  - `feature-list.json`: regenerated for installed skill runtime compatibility.
+
+### Session 8 (2026-02-28) - Coding Agent
+- Completed seven features:
+  - `Teacher endpoints use typed request/response schemas instead of raw dict payloads.`
+  - `Teacher API responses follow one consistent envelope schema.`
+  - `Auth dependency is consistently applied on teacher endpoints.`
+  - `Teacher material lifecycle end-to-end verification passes with screenshots or API evidence.`
+  - `Teacher intervention flow end-to-end verification passes.`
+  - `Lesson plan and PPT flow end-to-end verification passes.`
+  - `Developer documentation is updated with teacher API and skill usage examples.`
+- Added teacher API envelope middleware in `app/main.py`.
+- Applied auth dependency to all teacher endpoints in `app/api/v1/teacher.py`.
+- Updated all teacher integration tests for auth + envelope.
+- Added final validation coverage:
+  - `tests/integration/test_teacher_auth_envelope.py`
+  - `tests/e2e/test_teacher_workflows.py`
+- Added documentation:
+  - `docs/TEACHER_API_SKILLS_GUIDE.md`
+- Regression run result:
+  - `31 passed` across teacher integration/e2e suites + baseline architect/memory/e2e tests.
+- Updated status files:
+  - `feature_list.json`: flipped final seven `passes` fields to `true`.
+  - `feature-list.json`: regenerated for installed skill runtime compatibility.
+
+## Metrics
+- Total features: 51
+- Completed: 51
+- In progress: 0
+- Todo: 0
+- Progress: 100%
+
+## Session Handoff
+
+### Current State
+- Branch: teacher
+- Last commit: 19ff7439 - feat(skills): complete teacher skill manifests/entries and add runnable scaffold tests
+- Latest test run: `31 passed` (teacher integration/e2e + baseline architect/memory/e2e tests)
+- Long-task state files now exist: yes
+
+### Risks / Gaps
+- Teacher API endpoints are mostly placeholders and need concrete schemas + memory writes.
+- Skill package docs and skill entry implementation are inconsistent about
+  `feature_list.json` vs `feature-list.json`.
+- Some teacher-related namespaces referenced in planning docs are not yet part of
+  `memory/shared.py` (needs owner coordination per DEVELOPER_GUIDE).
+
+### Recommended Next Session (Coding Agent)
+1. Optional: split large teacher router into module files (`teacher_materials.py`, `teacher_monitor.py`, etc.) for maintainability.
+2. Optional: replace in-memory stores with real persistence adapter and keep API contract unchanged.
+3. Optional: add CI job to run full integration/e2e teacher suite on every PR.
+
+### Command Notes
+```bash
+# bootstrap environment
+./init.sh
+
+# run baseline regressions
+pytest -q tests/unit/test_architect.py tests/integration/test_memory.py tests/e2e/test_teaching_flow.py
+
+# count pending items
+grep '\"passes\": false' feature_list.json | wc -l
+```

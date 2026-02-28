@@ -1,0 +1,17 @@
+name: lesson-plan-generator
+description: Generate lesson plans and PPT artifacts.
+entry:
+  command: python
+  args:
+    - "{skill_path}/entry.py"
+    - "{args}"
+tools:
+  - generate_lesson_plan
+  - get_lesson_plan
+  - update_lesson_plan
+  - delete_lesson_plan
+  - generate_lesson_ppt
+  - get_ppt_status
+  - get_ppt_download
+  - get_ppt_preview
+  - list_lesson_plan_templates

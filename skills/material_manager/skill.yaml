@@ -1,0 +1,14 @@
+name: material-manager
+description: Upload and manage teaching materials.
+entry:
+  command: python
+  args:
+    - "{skill_path}/entry.py"
+    - "{args}"
+tools:
+  - teacher_upload_material
+  - teacher_get_material_status
+  - teacher_adjust_boundary
+  - teacher_mark_importance
+  - teacher_get_knowledge_graph
+  - teacher_delete_material

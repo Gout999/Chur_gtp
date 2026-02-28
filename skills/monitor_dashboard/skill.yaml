@@ -1,0 +1,13 @@
+name: monitor-dashboard
+description: Monitor class and student learning status.
+entry:
+  command: python
+  args:
+    - "{skill_path}/entry.py"
+    - "{args}"
+tools:
+  - teacher_get_class_overview
+  - teacher_get_student_detail
+  - teacher_get_student_cognition
+  - teacher_view_agent_logs
+  - teacher_query_interaction_history
