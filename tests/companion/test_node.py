@@ -184,6 +184,311 @@ class TestBoundaryEnforcement:
         ])
 
 
+# ---- Knowledge boundary helpers (Task 7 unit tests) -------------------------
+
+class TestBoundaryHelpers:
+    """Unit tests for the boundary helper functions added/enhanced in Task 7."""
+
+    def test_tokenize_concept_underscores(self):
+        from agents.companion.node import _tokenize_concept
+        tokens = _tokenize_concept("newton_second_law")
+        assert tokens == {"newton", "second", "law"}
+
+    def test_tokenize_concept_camelCase(self):
+        from agents.companion.node import _tokenize_concept
+        tokens = _tokenize_concept("newtonSecondLaw")
+        assert "newton" in tokens
+        assert "second" in tokens
+
+    def test_tokenize_concept_possessive(self):
+        from agents.companion.node import _tokenize_concept
+        tokens = _tokenize_concept("Newton's Second Law")
+        assert "newton" in tokens
+        assert "second" in tokens
+
+    def test_concept_matches_topic_substring(self):
+        from agents.companion.node import _concept_matches_topic
+        assert _concept_matches_topic("force", "forces_and_motion")
+
+    def test_concept_matches_topic_token_overlap(self):
+        from agents.companion.node import _concept_matches_topic
+        assert _concept_matches_topic("second_law", "newton_second_law")
+
+    def test_concept_no_match(self):
+        from agents.companion.node import _concept_matches_topic
+        assert not _concept_matches_topic("quantum_mechanics", "newton_second_law")
+
+    def test_collect_curriculum_concepts_merges_topics_and_nodes(self):
+        from agents.companion.node import _collect_curriculum_concepts
+        boundary = {
+            "curriculum_topics": ["force", "momentum"],
+            "knowledge_nodes": [
+                {"concept": "force"},
+                {"concept": "acceleration"},
+            ],
+        }
+        result = _collect_curriculum_concepts(boundary)
+        assert "force" in result
+        assert "momentum" in result
+        assert "acceleration" in result
+        assert result.count("force") == 1
+
+    def test_is_out_of_scope_with_knowledge_nodes(self):
+        from agents.companion.node import _is_out_of_scope
+        boundary = {
+            "curriculum_topics": ["newton_second_law"],
+            "knowledge_nodes": [{"concept": "force"}, {"concept": "mass"}],
+        }
+        assert not _is_out_of_scope("force", boundary)
+        assert _is_out_of_scope("quantum_mechanics", boundary)
+
+    def test_is_out_of_scope_empty_concept_returns_false(self):
+        from agents.companion.node import _is_out_of_scope
+        boundary = {"curriculum_topics": ["force"]}
+        assert not _is_out_of_scope("", boundary)
+
+    def test_is_out_of_scope_empty_topics_returns_false(self):
+        from agents.companion.node import _is_out_of_scope
+        boundary = {"curriculum_topics": []}
+        assert not _is_out_of_scope("quantum", boundary)
+
+    def test_find_closest_topic_selects_best_match(self):
+        from agents.companion.node import _find_closest_topic
+        boundary = {
+            "curriculum_topics": ["newton_second_law", "conservation_of_energy"],
+        }
+        result = _find_closest_topic("energy_conservation", boundary)
+        assert "energy" in result.lower()
+
+    def test_find_closest_topic_falls_back_to_first(self):
+        from agents.companion.node import _find_closest_topic
+        boundary = {"curriculum_topics": ["force", "momentum"]}
+        result = _find_closest_topic("unrelated_topic", boundary)
+        assert result == "force"
+
+    def test_detect_out_of_scope_topic_finds_quantum(self):
+        from agents.companion.node import _detect_out_of_scope_topic
+        boundary = {"curriculum_topics": ["newton_second_law", "force"]}
+        result = _detect_out_of_scope_topic(
+            "Can you explain quantum mechanics?", boundary,
+        )
+        assert result == "quantum"
+
+    def test_detect_out_of_scope_topic_returns_none_for_in_scope(self):
+        from agents.companion.node import _detect_out_of_scope_topic
+        boundary = {"curriculum_topics": ["newton_second_law", "force"]}
+        result = _detect_out_of_scope_topic(
+            "What is force?", boundary,
+        )
+        assert result is None
+
+    def test_detect_out_of_scope_topic_chinese_keywords(self):
+        from agents.companion.node import _detect_out_of_scope_topic
+        boundary = {"curriculum_topics": ["newton_second_law", "force"]}
+        result = _detect_out_of_scope_topic(
+            "请讲一下量子力学", boundary,
+        )
+        assert result == "quantum"
+
+
+class TestBoundaryResponse:
+    """Unit tests for _boundary_response with all three scope levels."""
+
+    def test_strict_contains_decline_language(self):
+        from agents.companion.node import _boundary_response
+        boundary = {"curriculum_topics": ["force"]}
+        text = _boundary_response("strict", boundary, "quantum")
+        assert "outside" in text.lower() or "focus" in text.lower()
+
+    def test_moderate_contains_bridge_language(self):
+        from agents.companion.node import _boundary_response
+        boundary = {"curriculum_topics": ["force"]}
+        text = _boundary_response("moderate", boundary, "quantum")
+        assert "interesting" in text.lower() or "connection" in text.lower()
+
+    def test_permissive_contains_tieback_language(self):
+        from agents.companion.node import _boundary_response
+        boundary = {"curriculum_topics": ["force"]}
+        text = _boundary_response("permissive", boundary, "quantum")
+        assert "curiosity" in text.lower() or "explore" in text.lower()
+
+    def test_response_references_closest_topic(self):
+        from agents.companion.node import _boundary_response
+        boundary = {"curriculum_topics": ["conservation_of_energy", "force"]}
+        text = _boundary_response("strict", boundary, "energy_storage")
+        assert "energy" in text.lower()
+
+
+# ---- Boundary integration (full node flow, Task 7) --------------------------
+
+class TestBoundaryIntegration:
+    """Integration tests for knowledge boundary compliance through the full node."""
+
+    def test_permissive_scope_allows_exploration_with_tieback(
+        self, make_state, seed_authority_graph,
+    ):
+        """With scope_level='permissive' and out-of-scope concept, the node
+        should still respond but include a curriculum tie-back message."""
+        seed_authority_graph(
+            scope_level="permissive",
+            session_id="test-session",
+            curriculum_topics=["newton_second_law"],
+        )
+        state = make_state(
+            event_payload={
+                "student_id": "s1",
+                "content": "Tell me about thermodynamics",
+                "target_concept": "thermodynamics",
+                "is_correct": False,
+            },
+        )
+        state = socratic_companion_node(state)
+        response = state["response_to_student"].lower()
+        assert any(phrase in response for phrase in [
+            "curiosity", "explore", "focus", "main",
+        ])
+
+    def test_no_target_concept_detects_out_of_scope_from_input(
+        self, make_state, seed_authority_graph,
+    ):
+        """When target_concept is empty, the node should detect out-of-scope
+        topics from the student's message text."""
+        seed_authority_graph(
+            scope_level="strict",
+            session_id="test-session",
+            curriculum_topics=["newton_second_law", "force"],
+        )
+        state = make_state(
+            event_payload={
+                "student_id": "s1",
+                "content": "Can you teach me about quantum physics?",
+                "target_concept": "",
+                "is_correct": None,
+            },
+        )
+        state = socratic_companion_node(state)
+        response = state["response_to_student"].lower()
+        assert any(phrase in response for phrase in [
+            "outside", "focus on", "current topic",
+        ])
+
+    def test_in_scope_concept_gets_normal_hint(
+        self, make_state, seed_authority_graph,
+    ):
+        """An in-scope concept should receive a normal hint, not a boundary response."""
+        seed_authority_graph(
+            scope_level="strict",
+            session_id="test-session",
+            curriculum_topics=["newton_second_law", "force", "momentum"],
+        )
+        state = make_state(
+            event_payload={
+                "student_id": "s1",
+                "content": "What is force?",
+                "target_concept": "force",
+                "is_correct": False,
+            },
+        )
+        state = socratic_companion_node(state)
+        tool_names = {t["tool"] for t in state["tools_to_call"]}
+        assert "construct_hint" in tool_names
+
+    def test_knowledge_nodes_extend_scope(
+        self, make_state, seed_authority_graph,
+    ):
+        """Concepts listed in knowledge_nodes (not just curriculum_topics)
+        should be considered in-scope."""
+        shared_memory.write("teacher_authority_graph", "test-session", {
+            "scope_level": "strict",
+            "curriculum_topics": ["newton_second_law"],
+            "knowledge_nodes": [
+                {"concept": "newton_second_law", "difficulty": 0.5},
+                {"concept": "acceleration", "difficulty": 0.4},
+            ],
+        })
+        state = make_state(
+            event_payload={
+                "student_id": "s1",
+                "content": "What is acceleration?",
+                "target_concept": "acceleration",
+                "is_correct": False,
+            },
+        )
+        state = socratic_companion_node(state)
+        tool_names = {t["tool"] for t in state["tools_to_call"]}
+        assert "construct_hint" in tool_names
+
+    def test_boundary_response_persisted_in_interaction(
+        self, make_state, seed_authority_graph,
+    ):
+        """Even boundary responses should be persisted in interaction_episodes."""
+        seed_authority_graph(
+            scope_level="strict",
+            session_id="test-session",
+            curriculum_topics=["newton_second_law"],
+        )
+        state = make_state(
+            event_payload={
+                "student_id": "s-boundary-persist",
+                "content": "Tell me about chemistry",
+                "target_concept": "chemistry",
+                "is_correct": False,
+            },
+        )
+        socratic_companion_node(state)
+        episodes = shared_memory.read_all(
+            "interaction_episodes",
+            filter_dict={"student_id": "s-boundary-persist"},
+        )
+        assert len(episodes) >= 1
+
+    def test_boundary_loaded_in_working_memory(self, make_state, seed_authority_graph):
+        """After the node runs, the loaded boundary should be stored in
+        working_memory for inspection."""
+        seed_authority_graph(
+            scope_level="moderate",
+            session_id="test-session",
+        )
+        state = socratic_companion_node(make_state())
+        boundary = state["working_memory"].get("knowledge_boundary", {})
+        assert boundary.get("scope_level") == "moderate"
+
+    def test_no_boundary_defaults_to_moderate(self, make_state):
+        """When no authority graph exists, scope_level defaults to moderate
+        and the node handles it gracefully."""
+        state = make_state(
+            event_payload={
+                "student_id": "s-no-boundary",
+                "content": "What is quantum mechanics?",
+                "target_concept": "quantum_mechanics",
+                "is_correct": False,
+            },
+        )
+        state = socratic_companion_node(state)
+        assert state["response_to_student"]
+        boundary = state["working_memory"].get("knowledge_boundary", {})
+        assert boundary.get("scope_level") == "moderate"
+
+    def test_session_fallback_to_global_boundary(self, make_state):
+        """When no session-specific boundary exists, fall back to global."""
+        shared_memory.write("teacher_authority_graph", "global", {
+            "scope_level": "strict",
+            "curriculum_topics": ["force"],
+        })
+        state = make_state(
+            session_id="nonexistent-session",
+            event_payload={
+                "student_id": "s1",
+                "content": "Tell me about chemistry",
+                "target_concept": "chemistry",
+                "is_correct": False,
+            },
+        )
+        state = socratic_companion_node(state)
+        response = state["response_to_student"].lower()
+        assert "outside" in response or "focus" in response
+
+
 # ---- Persistence (Phase 5) -------------------------------------------------
 
 class TestPersistence:

@@ -49,6 +49,10 @@ _BOUNDARY_BRIDGE = (
     "Interesting connection! That relates to a topic we'll cover later. "
     "For now, let's think about how {curriculum_hint} works..."
 )
+_BOUNDARY_PERMISSIVE = (
+    "Great curiosity! Let's explore that briefly and see how it connects "
+    "back to {curriculum_hint}, which is our main focus right now."
+)
 
 _DIRECT_ANSWER_PATTERNS = (
     "the answer is",
@@ -110,15 +114,23 @@ def _load_cognitive_model(student_id: str) -> Dict[str, Any]:
 
 
 def _load_knowledge_boundary(state: State) -> Dict[str, Any]:
-    """Load knowledge boundary written by Architect into teacher_authority_graph."""
+    """Load the latest knowledge boundary from teacher_authority_graph.
+
+    Tries the session-specific key first, then falls back to "global".
+    Defaults to ``scope_level="moderate"`` when no boundary exists (PRD §6).
+    """
     key = state.get("session_id") or "global"
     entry = shared_memory.read(_NS_AUTHORITY, key)
+    if not entry and key != "global":
+        entry = shared_memory.read(_NS_AUTHORITY, "global")
     if not entry:
+        logger.debug("No knowledge boundary found; defaulting to moderate scope")
         return {"scope_level": "moderate"}
     value = entry.get("value", {})
     boundary = value.get("latest_boundary", value)
     if "scope_level" not in boundary:
         boundary["scope_level"] = "moderate"
+    boundary.setdefault("_loaded_at", _utc_iso())
     return boundary
 
 
@@ -144,26 +156,164 @@ def _load_interaction_history(
 # Knowledge Boundary Helpers
 # ---------------------------------------------------------------------------
 
-def _is_out_of_scope(target_concept: str, boundary: Dict[str, Any]) -> bool:
-    """Check whether target_concept falls outside the curriculum boundary."""
-    topics = boundary.get("curriculum_topics", [])
-    if not topics or not target_concept:
+def _tokenize_concept(text: str) -> set[str]:
+    """Normalise a concept name into a set of lowercase tokens.
+
+    Handles underscores, hyphens, camelCase boundaries, and common
+    separators so that "newton_second_law" and "Newton's Second Law"
+    produce overlapping token sets.
+    """
+    import re
+    text = text.replace("'s", "").replace("\u2019s", "").replace("'", "")
+    text = re.sub(r"(?<=[a-z])(?=[A-Z])", " ", text)
+    text = text.lower()
+    text = re.sub(r"[_\-/]", " ", text)
+    tokens = set(text.split())
+    tokens.discard("")
+    return tokens
+
+
+def _concept_matches_topic(concept: str, topic: str) -> bool:
+    """Return True when *concept* is semantically close enough to *topic*.
+
+    Uses three tiers:
+    1. Substring containment (original behaviour).
+    2. Token overlap — if ≥50 % of concept tokens appear in the topic
+       token set (or vice-versa), consider it a match.
+    3. Knowledge-node concept names (handled by the caller extracting
+       concept names from ``knowledge_nodes``).
+    """
+    c = concept.lower()
+    t = topic.lower()
+    if c in t or t in c:
+        return True
+
+    c_tokens = _tokenize_concept(concept)
+    t_tokens = _tokenize_concept(topic)
+    if not c_tokens or not t_tokens:
         return False
-    concept_lower = target_concept.lower()
+    overlap = c_tokens & t_tokens
+    smaller = min(len(c_tokens), len(t_tokens))
+    return len(overlap) / smaller >= 0.5
+
+
+def _collect_curriculum_concepts(boundary: Dict[str, Any]) -> List[str]:
+    """Gather all known curriculum concept names from the boundary payload.
+
+    Merges ``curriculum_topics`` with concept names found inside
+    ``knowledge_nodes`` to give a unified list of in-scope concepts.
+    """
+    topics: List[str] = list(boundary.get("curriculum_topics", []))
+    for node in boundary.get("knowledge_nodes", []):
+        name = node.get("concept", "")
+        if name and name not in topics:
+            topics.append(name)
+    return topics
+
+
+def _is_out_of_scope(target_concept: str, boundary: Dict[str, Any]) -> bool:
+    """Check whether *target_concept* falls outside the curriculum boundary.
+
+    Returns False (in-scope) when there is no boundary data, no concept to
+    check, or the concept token-matches any known curriculum topic.
+    """
+    all_topics = _collect_curriculum_concepts(boundary)
+    if not all_topics or not target_concept:
+        return False
     return not any(
-        topic.lower() in concept_lower or concept_lower in topic.lower()
-        for topic in topics
+        _concept_matches_topic(target_concept, topic)
+        for topic in all_topics
     )
 
 
-def _boundary_response(scope_level: str, boundary: Dict[str, Any]) -> str:
-    """Generate a canned boundary response for out-of-scope questions."""
-    topics = boundary.get("curriculum_topics", [])
-    curriculum_hint = topics[0] if topics else "the current topic"
+def _find_closest_topic(
+    target_concept: str,
+    boundary: Dict[str, Any],
+) -> str:
+    """Return the curriculum topic with the highest token overlap to *target_concept*.
+
+    Falls back to the first topic or a generic label.
+    """
+    all_topics = _collect_curriculum_concepts(boundary)
+    if not all_topics:
+        return "the current topic"
+
+    if not target_concept:
+        return all_topics[0]
+
+    concept_tokens = _tokenize_concept(target_concept)
+    best, best_score = all_topics[0], 0.0
+    for topic in all_topics:
+        t_tokens = _tokenize_concept(topic)
+        if not t_tokens:
+            continue
+        overlap = len(concept_tokens & t_tokens)
+        score = overlap / max(len(concept_tokens), len(t_tokens))
+        if score > best_score:
+            best, best_score = topic, score
+    return best
+
+
+def _boundary_response(
+    scope_level: str,
+    boundary: Dict[str, Any],
+    target_concept: str = "",
+) -> str:
+    """Generate a boundary response for out-of-scope questions.
+
+    Supports all three scope levels defined in COMPANION_LOGIC_FLOW:
+    - strict   → decline
+    - moderate → bridge
+    - permissive → tie-back (allow exploration but redirect)
+    """
+    curriculum_hint = _find_closest_topic(target_concept, boundary)
 
     if scope_level == "strict":
         return _BOUNDARY_DECLINE.format(curriculum_hint=curriculum_hint)
-    return _BOUNDARY_BRIDGE.format(curriculum_hint=curriculum_hint)
+    if scope_level == "moderate":
+        return _BOUNDARY_BRIDGE.format(curriculum_hint=curriculum_hint)
+    return _BOUNDARY_PERMISSIVE.format(curriculum_hint=curriculum_hint)
+
+
+_SCOPE_PROBE_KEYWORDS: Dict[str, List[str]] = {
+    "quantum": ["quantum", "量子"],
+    "relativity": ["relativity", "相对论"],
+    "thermodynamics": ["thermodynamics", "热力学"],
+    "electromagnetism": ["electromagnetism", "electromagnetic", "电磁"],
+    "optics": ["optics", "光学"],
+    "chemistry": ["chemistry", "chemical", "化学"],
+    "biology": ["biology", "biological", "生物"],
+    "calculus": ["calculus", "微积分"],
+    "statistics": ["statistics", "统计"],
+    "programming": ["programming", "编程", "coding"],
+}
+
+
+def _detect_out_of_scope_topic(
+    student_input: str,
+    boundary: Dict[str, Any],
+) -> Optional[str]:
+    """Try to identify an out-of-scope topic mentioned in the student's text.
+
+    Scans known broad-domain keywords against the input and checks whether
+    each match is covered by the curriculum.  Returns the first detected
+    out-of-scope topic name, or None if everything appears in-scope.
+
+    This is a lightweight heuristic (no LLM call) used only as a safety net
+    when the caller has no explicit ``target_concept``.
+    """
+    text_lower = student_input.lower()
+    all_topics = _collect_curriculum_concepts(boundary)
+    if not all_topics:
+        return None
+
+    for topic_key, keywords in _SCOPE_PROBE_KEYWORDS.items():
+        if any(kw in text_lower for kw in keywords):
+            if not any(
+                _concept_matches_topic(topic_key, t) for t in all_topics
+            ):
+                return topic_key
+    return None
 
 
 def _contains_direct_answer(text: str) -> bool:
@@ -522,30 +672,55 @@ def _enforce_guardrails(
             "response_text": "",
         }
 
+    effective_concept = target_concept
+    if not effective_concept:
+        detected = _detect_out_of_scope_topic(student_input, boundary)
+        if detected:
+            effective_concept = detected
+
     if (
         decision["action"] in ("hint", "direct_response")
-        and target_concept
-        and _is_out_of_scope(target_concept, boundary)
-        and scope_level in ("strict", "moderate")
+        and effective_concept
+        and _is_out_of_scope(effective_concept, boundary)
     ):
-        action = (
-            "boundary_decline" if scope_level == "strict"
-            else "boundary_bridge"
-        )
-        logger.info(
-            "Guardrail override: LLM chose hint but concept '%s' is "
-            "out-of-scope (scope_level=%s); switching to %s",
-            target_concept, scope_level, action,
-        )
-        return {
-            "action": action,
-            "reasoning": (
-                f"Guardrail override: {decision.get('reasoning', '')} "
-                f"→ boundary {action} (scope_level={scope_level})"
-            ),
-            "tool_params": {},
-            "response_text": _boundary_response(scope_level, boundary),
-        }
+        if scope_level != "permissive":
+            action = (
+                "boundary_decline" if scope_level == "strict"
+                else "boundary_bridge"
+            )
+            logger.info(
+                "Guardrail override: concept '%s' is out-of-scope "
+                "(scope_level=%s); switching to %s",
+                effective_concept, scope_level, action,
+            )
+            return {
+                "action": action,
+                "reasoning": (
+                    f"Guardrail override: {decision.get('reasoning', '')} "
+                    f"→ boundary {action} (scope_level={scope_level})"
+                ),
+                "tool_params": {},
+                "response_text": _boundary_response(
+                    scope_level, boundary, effective_concept,
+                ),
+            }
+        else:
+            logger.info(
+                "Permissive scope: concept '%s' is out-of-scope but "
+                "exploration allowed; adding curriculum tie-back",
+                effective_concept,
+            )
+            return {
+                "action": "boundary_permissive",
+                "reasoning": (
+                    f"Guardrail: {decision.get('reasoning', '')} "
+                    f"→ permissive scope tie-back"
+                ),
+                "tool_params": decision.get("tool_params", {}),
+                "response_text": _boundary_response(
+                    scope_level, boundary, effective_concept,
+                ),
+            }
 
     if decision["action"] in ("hint", "direct_response"):
         concept_entry = cog_model.get("concepts", {}).get(target_concept, {})
@@ -623,9 +798,15 @@ def _deterministic_fallback(
     """
     scope_level = boundary.get("scope_level", "moderate")
 
+    effective_concept = target_concept
+    if not effective_concept:
+        detected = _detect_out_of_scope_topic(student_input, boundary)
+        if detected:
+            effective_concept = detected
+
     # Path C: knowledge boundary enforcement
-    if target_concept and _is_out_of_scope(target_concept, boundary):
-        if scope_level in ("strict", "moderate"):
+    if effective_concept and _is_out_of_scope(effective_concept, boundary):
+        if scope_level != "permissive":
             action = (
                 "boundary_decline" if scope_level == "strict"
                 else "boundary_bridge"
@@ -637,7 +818,9 @@ def _deterministic_fallback(
                     f"(scope_level={scope_level})"
                 ),
                 "tool_params": {},
-                "response_text": _boundary_response(scope_level, boundary),
+                "response_text": _boundary_response(
+                    scope_level, boundary, effective_concept,
+                ),
             }
 
     # Path B: escalation on repeated failure
@@ -861,7 +1044,9 @@ def socratic_companion_node(state: State) -> State:
         tools_called.append({"tool": "escalate_to_human", "result": esc_result})
         response_text = esc_result["student_message"]
 
-    elif decision["action"] in ("boundary_decline", "boundary_bridge"):
+    elif decision["action"] in (
+        "boundary_decline", "boundary_bridge", "boundary_permissive",
+    ):
         response_text = decision.get("response_text", "")
 
     elif decision["action"] == "direct_response":
