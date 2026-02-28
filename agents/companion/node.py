@@ -16,6 +16,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
+from memory.retrieval import retrieve_teacher_knowledge
 from memory.shared import shared_memory
 from prompts.companion import SOCRATIC_COMPANION_PROMPT
 from tools.cognition import update_student_cognition_map
@@ -31,8 +32,10 @@ _NS_AUTHORITY = "teacher_authority_graph"
 
 _MINIMAX_MODEL = "MiniMax-M2.5"
 _MAX_HISTORY_EPISODES = 10
+_MAX_FOLLOW_UP_QUESTIONS = 2
 
 _ESCALATION_THRESHOLD = 5
+_ESCALATED_SESSION_SUFFIX = "老师已经收到通知，会尽快来帮你。"
 _STRATEGY_SWITCH_THRESHOLD = 3
 _ALL_STRATEGIES = frozenset({"socratic", "decompose", "analogy", "confront"})
 
@@ -184,18 +187,20 @@ def _load_interaction_history(
     student_id: str,
     limit: int = _MAX_HISTORY_EPISODES,
 ) -> List[Dict[str, Any]]:
-    """Fetch recent interaction episodes for this student.
+    """Fetch recent interaction episodes for this student (oldest first).
 
     Filters out cognition_snapshot entries that share the namespace but
-    are not actual interaction records.
+    are not actual interaction records. Sorts by timestamp so context order is clear.
     """
     entries = shared_memory.read_all(
         _NS_EPISODES,
         filter_dict={"student_id": student_id},
-        limit=limit,
+        limit=limit * 2,
     )
     raw = [e.get("value", {}) for e in entries]
-    return [ep for ep in raw if ep.get("type") in ("interaction", "escalation")]
+    episodes = [ep for ep in raw if ep.get("type") in ("interaction", "escalation")]
+    episodes.sort(key=lambda ep: ep.get("timestamp") or "")
+    return episodes[-limit:]
 
 
 # ---------------------------------------------------------------------------
@@ -385,6 +390,11 @@ def _detect_emotional_signal(student_input: str) -> Optional[str]:
 # Working Memory Assembly
 # ---------------------------------------------------------------------------
 
+def _session_has_escalated(history: List[Dict[str, Any]]) -> bool:
+    """True if any episode in the loaded history is an escalation."""
+    return any(ep.get("type") == "escalation" for ep in (history or []))
+
+
 def _assemble_working_memory(
     student_input: str,
     cog_model: Dict[str, Any],
@@ -393,6 +403,8 @@ def _assemble_working_memory(
     payload: Dict[str, Any],
     *,
     session_tracker: Optional[Dict[str, Dict[str, Any]]] = None,
+    retrieved_teacher_knowledge: Optional[List[Dict[str, Any]]] = None,
+    session_has_escalated: bool = False,
 ) -> str:
     """Format loaded context into a concise user message for the LLM."""
     sections: List[str] = []
@@ -436,6 +448,21 @@ def _assemble_working_memory(
         )
     sections.append(f"## Knowledge Boundary\n{boundary_text}")
 
+    if retrieved_teacher_knowledge:
+        lines = [
+            f"- {c.get('content', '')} [source: {c.get('source', '')}]"
+            for c in retrieved_teacher_knowledge
+        ]
+        sections.append("## Retrieved Teacher Knowledge\n" + "\n".join(lines))
+
+    if session_has_escalated:
+        sections.append(
+            "## Session has escalated\n"
+            "Teacher has been notified. This turn you MUST still give hint/guidance "
+            "for in-scope questions (do not give direct answers). "
+            "At the end of your reply, mention that the teacher has been notified."
+        )
+
     if session_tracker:
         lines = []
         for concept, data in session_tracker.items():
@@ -457,18 +484,30 @@ def _assemble_working_memory(
             ep_type = ep.get("type", "interaction")
             ts = ep.get("timestamp", "?")
             if ep_type == "interaction":
-                lines.append(
-                    f"- [{ts}] Student: {str(ep.get('student_input', ''))[:80]} | "
-                    f"Response: {str(ep.get('response', ''))[:80]}"
-                )
+                inp = (ep.get("student_input") or "")[:120]
+                out = (ep.get("response") or "")[:200]
+                lines.append(f"- Student: {inp}\n  Companion: {out}")
             elif ep_type == "escalation":
-                lines.append(f"- [{ts}] ESCALATION: {ep.get('reason', '?')}")
+                lines.append(f"- ESCALATION: {ep.get('reason', '?')}")
         if lines:
-            sections.append("## Recent Interaction History\n" + "\n".join(lines))
+            sections.append(
+                "## Recent Interaction History (use this context for the current reply)\n"
+                + "\n".join(lines)
+            )
 
     target_concept = payload.get("target_concept", "")
     if target_concept:
         sections.append(f"## Current Target Concept\n{target_concept}")
+
+    is_correct = payload.get("is_correct")
+    if is_correct is not None:
+        sections.append(
+            "## Answer correctness\n"
+            f"is_correct: {str(is_correct).lower()} (student gave an answer; "
+            "if true, confirm it is correct; if false, guide with hints.)"
+        )
+    else:
+        sections.append("## Answer correctness\nis_correct: unknown (student may be asking, not answering)")
 
     student_id = payload.get("student_id", "unknown")
     sections.append(f"## Student ID\n{student_id}")
@@ -582,6 +621,8 @@ def _llm_reason(
     payload: Dict[str, Any],
     *,
     session_tracker: Optional[Dict[str, Dict[str, Any]]] = None,
+    retrieved_teacher_knowledge: Optional[List[Dict[str, Any]]] = None,
+    session_has_escalated: bool = False,
 ) -> Optional[Dict[str, Any]]:
     """
     Call MiniMax-M2.5 via Anthropic SDK to reason about the student's input
@@ -600,6 +641,8 @@ def _llm_reason(
     context_msg = _assemble_working_memory(
         student_input, cog_model, boundary, history, payload,
         session_tracker=session_tracker or {},
+        retrieved_teacher_knowledge=retrieved_teacher_knowledge,
+        session_has_escalated=session_has_escalated,
     )
 
     try:
@@ -1034,10 +1077,20 @@ def socratic_companion_node(state: State) -> State:
     history = _load_interaction_history(student_id)
     session_tracker = _read_session_tracker(state)
 
+    retrieved_knowledge = retrieve_teacher_knowledge(
+        student_input,
+        boundary,
+        top_k=5,
+        state_key=state.get("session_id") or "global",
+    )
+    session_has_escalated = _session_has_escalated(history)
+
     # ── Phase 2: LLM Reasoning ────────────────────────────────────────────
     decision = _llm_reason(
         student_input, cog_model, boundary, history, payload,
         session_tracker=session_tracker,
+        retrieved_teacher_knowledge=retrieved_knowledge,
+        session_has_escalated=session_has_escalated,
     )
     if decision is None:
         decision = _deterministic_fallback(
@@ -1069,13 +1122,22 @@ def socratic_companion_node(state: State) -> State:
             current_input=params.get("current_input", student_input),
             target_concept=params.get("target_concept", target_concept),
             error_analysis=ea,
+            teacher_knowledge_chunks=retrieved_knowledge,
         )
         tools_called.append({"tool": "construct_hint", "result": hint_result})
 
-        follow_ups = hint_result.get("follow_up_questions", [])
+        follow_ups = hint_result.get("follow_up_questions", [])[: _MAX_FOLLOW_UP_QUESTIONS]
         response_text = hint_result["hint_content"]
         if follow_ups:
             response_text += "\n\n" + "\n".join(f"- {q}" for q in follow_ups)
+
+        if is_correct is True:
+            response_text = (
+                "你的答案是正确的。理解得不错，可以再想想它和别的知识点的联系，"
+                "这样会掌握得更牢。"
+            )
+        if session_has_escalated:
+            response_text = response_text.rstrip() + "\n\n" + _ESCALATED_SESSION_SUFFIX
 
     elif decision["action"] == "escalate":
         params = decision["tool_params"]
@@ -1097,6 +1159,8 @@ def socratic_companion_node(state: State) -> State:
 
     elif decision["action"] == "direct_response":
         response_text = decision.get("response_text", "")
+        if session_has_escalated:
+            response_text = (response_text or "").rstrip() + "\n\n" + _ESCALATED_SESSION_SUFFIX
 
     # ── Phase 3b: Strategy Exhaustion Check ────────────────────────────────
     hint_strategy: Optional[str] = None
