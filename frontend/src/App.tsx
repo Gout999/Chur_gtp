@@ -12,6 +12,8 @@ import IntroScreen from '@/sections/IntroScreen';
 import RevisionPage from '@/sections/RevisionPage';
 import HomeworkPage from '@/sections/HomeworkPage';
 import MistakesPage from '@/sections/MistakesPage';
+import DailyRecommendationPage from '@/sections/DailyRecommendationPage';
+import AIEnhancementEditor from '@/sections/AIEnhancementEditor';
 import type { PageType } from '@/types';
 import './App.css';
 
@@ -42,7 +44,7 @@ function App() {
     const hash = window.location.hash;
     if (hash) {
       const page = hash.replace('#/', '') as PageType;
-      if (['teacher-dashboard', 'dashboard', 'revision', 'homework', 'mistakes', 'teacher-classes', 'teacher-assignments', 'teacher-analytics', 'assignments', 'classes'].includes(page)) {
+      if (['teacher-dashboard', 'dashboard', 'revision', 'homework', 'mistakes', 'daily-recommendation', 'teacher-classes', 'teacher-assignments', 'teacher-analytics', 'assignments', 'classes', 'ai-enhancement-editor'].includes(page)) {
         setCurrentPage(page);
       }
     }
@@ -53,7 +55,7 @@ function App() {
       const hash = window.location.hash;
       if (hash) {
         const page = hash.replace('#/', '') as PageType;
-        if (['teacher-dashboard', 'dashboard', 'revision', 'homework', 'mistakes', 'teacher-classes', 'teacher-assignments', 'teacher-analytics', 'assignments', 'classes'].includes(page)) {
+        if (['teacher-dashboard', 'dashboard', 'revision', 'homework', 'mistakes', 'daily-recommendation', 'teacher-classes', 'teacher-assignments', 'teacher-analytics', 'assignments', 'classes', 'ai-enhancement-editor'].includes(page)) {
           setCurrentPage(page);
         } else {
           setCurrentPage('home');
@@ -230,6 +232,33 @@ function App() {
             transition={{ duration: 0.5 }}
           >
             <MistakesPage onPageChange={handlePageChange} />
+          </motion.div>
+        );
+      case 'daily-recommendation':
+        return (
+          <motion.div
+            key="daily-recommendation"
+            variants={pageVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={{ duration: 0.5 }}
+          >
+            <DailyRecommendationPage onPageChange={handlePageChange} />
+          </motion.div>
+        );
+
+
+      case 'ai-enhancement-editor':
+        return (
+          <motion.div
+            key="ai-enhancement-editor"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <AIEnhancementEditor onPageChange={handlePageChange} />
           </motion.div>
         );
         
