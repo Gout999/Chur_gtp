@@ -1,0 +1,743 @@
+/* TeacherAnalytics - Light Theme with Animation */
+.teacher-analytics {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 1;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  padding-top: 4rem;
+}
+/* TeacherAnalytics - Light Theme with Animation */
+.teacher-analytics {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 1;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  padding-top: 4rem;
+}
+
+/* Back Button */
+.teacher-analytics .back-button {
+  position: fixed;
+  top: 1.5rem;
+  left: 1.5rem;
+  z-index: 100;
+  padding: 0.75rem 1.5rem;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(203, 213, 225, 0.5);
+  border-radius: 2rem;
+  color: #475569;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.teacher-analytics .back-button:hover {
+  background: white;
+  color: #1e293b;
+  transform: translateX(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* Expanding Background */
+.teacher-analytics .analytics-bg {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  transform-origin: center center;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.teacher-analytics .analytics-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.teacher-analytics .analytics-bg-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.95) 0%, rgba(241, 245, 249, 0.98) 100%);
+  pointer-events: none;
+}
+
+/* Content */
+/* Content */
+.teacher-analytics .analytics-content {
+  position: relative;
+  z-index: 20;
+  padding: 2rem 2rem 4rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: calc(100vh - 4rem);
+}
+
+/* Header */
+.teacher-analytics .analytics-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.teacher-analytics .analytics-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+.teacher-analytics .analytics-header p {
+  font-size: 1.1rem;
+  color: #64748b;
+  font-weight: 400;
+}
+
+/* Stats Grid */
+.teacher-analytics .stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2.5rem;
+}
+
+.teacher-analytics .stat-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.teacher-analytics .stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08);
+  border-color: #cbd5e1;
+}
+
+.teacher-analytics .stat-icon {
+  font-size: 2rem;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  border-radius: 1rem;
+}
+
+.teacher-analytics .stat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.teacher-analytics .stat-label {
+  font-size: 0.8rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.teacher-analytics .stat-value {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Students Section */
+.teacher-analytics .students-section {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.teacher-analytics .students-section h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.teacher-analytics .students-section h2 .subtitle {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  font-weight: 400;
+  margin-left: 0.5rem;
+}
+
+.teacher-analytics .students-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.teacher-analytics .students-table th,
+.teacher-analytics .students-table td {
+  padding: 1rem 1.25rem;
+  text-align: left;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.teacher-analytics .students-table th {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  background: #f8fafc;
+}
+
+.teacher-analytics .students-table th:first-child {
+  border-radius: 0.5rem 0 0 0.5rem;
+}
+
+.teacher-analytics .students-table th:last-child {
+  border-radius: 0 0.5rem 0.5rem 0;
+}
+
+.teacher-analytics .students-table td {
+  color: #334155;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.teacher-analytics .students-table tbody tr {
+  transition: all 0.2s ease;
+}
+
+.teacher-analytics .students-table tbody tr:hover,
+.teacher-analytics .students-table tbody tr.clickable-row:hover {
+  background: #f8fafc;
+  cursor: pointer;
+}
+
+.teacher-analytics .performance-badge {
+  display: inline-block;
+  padding: 0.375rem 0.875rem;
+  border-radius: 2rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.teacher-analytics .performance-badge.excellent {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.teacher-analytics .performance-badge.good {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.teacher-analytics .performance-badge.average {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.teacher-analytics .view-details-btn {
+  padding: 0.5rem 1rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.teacher-analytics .students-table tbody tr:hover .view-details-btn {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: white;
+}
+
+/* Subject Strengths */
+.teacher-analytics .subjects-section {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.teacher-analytics .subjects-section h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 1.25rem;
+}
+
+.teacher-analytics .subject-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.teacher-analytics .subject-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.teacher-analytics .subject-name {
+  width: 100px;
+  font-weight: 600;
+  color: #334155;
+  font-size: 0.9rem;
+}
+
+.teacher-analytics .bar-container {
+  flex: 1;
+  height: 10px;
+  background: #f1f5f9;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.teacher-analytics .bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
+  border-radius: 5px;
+  transition: width 0.8s ease;
+}
+
+.teacher-analytics .subject-value {
+  width: 50px;
+  text-align: right;
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 0.9rem;
+}
+
+/* Knowledge Gaps */
+.teacher-analytics .gaps-section {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.teacher-analytics .gaps-section h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 1.25rem;
+}
+
+.teacher-analytics .gaps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.teacher-analytics .gap-item {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1rem 1.25rem;
+  background: #f8fafc;
+  border-radius: 0.75rem;
+  border: 1px solid #f1f5f9;
+  transition: all 0.2s ease;
+}
+
+.teacher-analytics .gap-item:hover {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
+.teacher-analytics .gap-topic {
+  flex: 1;
+  font-weight: 600;
+  color: #334155;
+  font-size: 0.95rem;
+}
+
+.teacher-analytics .gap-difficulty {
+  padding: 0.375rem 0.875rem;
+  border-radius: 2rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.teacher-analytics .gap-difficulty.high {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.teacher-analytics .gap-difficulty.medium {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.teacher-analytics .gap-difficulty.low {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.teacher-analytics .gap-students {
+  color: #64748b;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Student Detail View */
+.student-detail-view {
+  padding: 1rem 0;
+}
+
+.student-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.student-avatar {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+  color: white;
+  box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.3);
+}
+
+.student-title h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 0.75rem;
+}
+
+.student-meta {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.score-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border-radius: 2rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #1e40af;
+}
+
+.student-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 1.5rem;
+}
+
+.detail-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.detail-section {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.detail-section h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Radar Chart */
+.radar-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.radar-container {
+  display: flex;
+  justify-content: center;
+  margin: 1rem 0;
+}
+
+.radar-chart {
+  display: block;
+  margin: 0 auto;
+}
+
+.radar-legend {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.legend-subject {
+  flex: 1;
+  font-weight: 500;
+}
+
+.legend-score {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Tags */
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tag {
+  padding: 0.5rem 1rem;
+  border-radius: 2rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.strength-tag {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.weakness-tag {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Scores List */
+.scores-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.score-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.875rem 1rem;
+  background: #f8fafc;
+  border-radius: 0.75rem;
+  border: 1px solid #f1f5f9;
+}
+
+.score-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.score-subject {
+  font-weight: 600;
+  color: #334155;
+  font-size: 0.9rem;
+}
+
+.score-date {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.score-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+/* Recommendations */
+.recommendations-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.recommendation-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 0.75rem;
+  border: 1px solid #f1f5f9;
+  font-size: 0.9rem;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.recommendation-item svg {
+  color: #f59e0b;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+/* Quick Actions */
+.quick-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  padding: 0.75rem 1.25rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  color: #475569;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+}
+
+.action-btn.primary {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: white;
+}
+
+.action-btn.primary:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+/* Back to Overview Button */
+.back-to-overview-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  color: #475569;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.back-to-overview-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #1e293b;
+  transform: translateX(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+
+/* Responsive */
+@media (max-width: 768px) {
+  .teacher-analytics .analytics-header h1 {
+    font-size: 1.75rem;
+  }
+
+  .teacher-analytics .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .teacher-analytics .analytics-content {
+    padding: 4rem 1rem 2rem;
+  }
+
+  .student-detail-header {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .student-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .teacher-analytics .students-table {
+    font-size: 0.8rem;
+  }
+
+  .teacher-analytics .students-table th,
+  .teacher-analytics .students-table td {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .radar-legend {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

@@ -1,0 +1,373 @@
+
+
+.startpage-root {
+  background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 50%, #dee2e6 100%);
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 50;
+}
+
+.app {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Scene Container with 3D perspective */
+.scene-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  perspective: 600px;
+  perspective-origin: 50% 50%;
+  overflow: hidden;
+}
+
+/* Header Styles */
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10000;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+}
+
+.search-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  border: 2px solid #000;
+  border-radius: 50px;
+  padding: 12px 24px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  min-width: 400px;
+  justify-content: space-between;
+  pointer-events: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.menu-btn,
+.search-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+  color: #000;
+}
+
+.menu-btn:hover,
+.search-btn:hover {
+  transform: scale(1.1);
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: #000;
+}
+
+/* 3D Objects Container */
+.objects-3d-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+}
+
+.objects-3d-container.transitioning {
+  transition: transform 2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 3D Floating Objects */
+.floating-object-3d {
+  will-change: transform, opacity, filter;
+  cursor: pointer;
+}
+
+.floating-object-3d img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.3));
+  pointer-events: none;
+  user-select: none;
+}
+
+.floating-object-3d.hovered img {
+  filter: drop-shadow(0 30px 60px rgba(0, 0, 0, 0.4)) brightness(1.1);
+}
+
+/* iOS Liquid Glass Buttons */
+.bottom-controls {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 16px;
+  z-index: 100;
+}
+
+.control-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 18px 36px;
+  min-width: 160px;
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 24px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #000;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.control-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.6) 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.control-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.8),
+    rgba(255, 255, 255, 0.3)
+  );
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.control-btn:hover {
+  transform: translateY(-4px) scale(1.02);
+  background: rgba(255, 255, 255, 0.6);
+  box-shadow: 
+    0 20px 50px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.4);
+  color: #000;
+}
+
+.control-btn:hover::before {
+  opacity: 1;
+}
+
+.control-btn:hover::after {
+  opacity: 1;
+}
+
+.control-btn:active {
+  transform: translateY(-2px) scale(0.98);
+  transition: all 0.15s ease;
+}
+
+/* Remove colored gradients */
+.control-btn.student-btn,
+.control-btn.teacher-btn {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.control-btn.student-btn:hover,
+.control-btn.teacher-btn:hover {
+  background: rgba(255, 255, 255, 0.6);
+  box-shadow: 
+    0 20px 50px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+/* Icon pulse on hover */
+.control-btn:hover svg {
+  animation: iconPulse 0.6s ease infinite;
+}
+
+@keyframes iconPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .bottom-controls {
+    bottom: 30px;
+    gap: 12px;
+  }
+  
+  .control-btn {
+    padding: 14px 24px;
+    min-width: 130px;
+    font-size: 13px;
+  }
+}
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .bottom-controls {
+    bottom: 30px;
+    gap: 12px;
+  }
+  
+  .control-btn {
+    padding: 14px 24px;
+    min-width: 130px;
+    font-size: 13px;
+  }
+}
+
+/* White Overlay for transition */
+.white-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #ffffff;
+  z-index: 20000;
+  pointer-events: none;
+}
+
+/* Name Display - Soft pastel colors */
+.name-display {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 20001;
+}
+
+.name-display h1 {
+  font-size: 64px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  margin-bottom: 16px;
+  color: #1f2937;
+  -webkit-background-clip: unset;
+  -webkit-text-fill-color: unset;
+  background-clip: unset;
+  text-shadow: none;
+}
+
+.name-display p {
+  font-size: 18px;
+  font-weight: 300;
+  color: #6b7280;
+  letter-spacing: 0;
+  margin-top: 16px;
+}
+
+/* Expanding Circle - White/Smooth gray */
+.expanding-circle {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  /* Soft white with subtle gray tint */
+  background: radial-gradient(circle, #ffffff 0%, #f5f5f5 50%, #e8e8e8 100%);
+  border-radius: 50%;
+  transform-origin: center;
+  z-index: 20002;
+  margin-left: -10px;
+  margin-top: -10px;
+  box-shadow: 0 0 60px rgba(255, 255, 255, 0.8);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .search-container {
+    min-width: auto;
+    width: 90%;
+    max-width: 350px;
+  }
+
+  .logo {
+    font-size: 20px;
+  }
+
+  .control-btn {
+    padding: 12px 20px;
+    font-size: 12px;
+  }
+
+  .name-display h1 {
+    font-size: 48px;
+    letter-spacing: 0.1em;
+  }
+
+  .name-display p {
+    font-size: 16px;
+    letter-spacing: 0;
+  }
+}
+
+
+/* Animation for entrance */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.app {
+  animation: fadeIn 0.5s ease;
+}
+
+/* Custom cursor for interactive feel */
+.objects-3d-container {
+  cursor: grab;
+}
+
+.objects-3d-container:active {
+  cursor: grabbing;
+}
