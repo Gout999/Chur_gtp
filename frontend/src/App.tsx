@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import HeroSection from '@/sections/HeroSection';
+import StartPage from '@/sections/StartPage';
 import RevisionPage from '@/sections/RevisionPage';
 import HomeworkPage from '@/sections/HomeworkPage';
 import MistakesPage from '@/sections/MistakesPage';
@@ -33,6 +34,8 @@ function App() {
       
       // Always show nav on hero, hide on scroll down, show on scroll up
       if (currentPage === 'home') {
+        setIsNavVisible(false); // Hide on startpage
+      } else if (currentPage === 'dashboard') {
         setIsNavVisible(true);
       } else {
         if (currentScrollY > lastScrollY && currentScrollY > 100) {
@@ -54,7 +57,7 @@ function App() {
     const hash = window.location.hash;
     if (hash) {
       const page = hash.replace('#/', '') as PageType;
-      if (['revision', 'homework', 'mistakes'].includes(page)) {
+      if (['dashboard', 'revision', 'homework', 'mistakes'].includes(page)) {
         setCurrentPage(page);
       }
     }
@@ -66,7 +69,7 @@ function App() {
       const hash = window.location.hash;
       if (hash) {
         const page = hash.replace('#/', '') as PageType;
-        if (['revision', 'homework', 'mistakes'].includes(page)) {
+        if (['dashboard', 'revision', 'homework', 'mistakes'].includes(page)) {
           setCurrentPage(page);
         } else {
           setCurrentPage('home');
@@ -89,10 +92,24 @@ function App() {
 
   const renderPage = () => {
     switch (currentPage) {
+      
       case 'home':
         return (
           <motion.div
             key="home"
+            variants={pageVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={{ duration: 0.5 }}
+          >
+            <StartPage onPageChange={handlePageChange} />
+          </motion.div>
+        );
+      case 'dashboard':
+        return (
+          <motion.div
+            key="dashboard"
             variants={pageVariants}
             initial="initial"
             animate="animate"
@@ -148,11 +165,13 @@ function App() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Navbar
-        currentPage={currentPage}
-        onPageChange={handlePageChange}
-        isVisible={isNavVisible}
-      />
+      {currentPage !== 'home' && (
+        <Navbar
+          currentPage={currentPage}
+          onPageChange={handlePageChange}
+          isVisible={isNavVisible}
+        />
+      )}
       
       <main className="relative">
         <AnimatePresence mode="wait">
@@ -161,7 +180,7 @@ function App() {
       </main>
 
       {/* Footer */}
-      {currentPage !== 'home' && (
+      {(currentPage !== 'home' && currentPage !== 'dashboard') && (
         <motion.footer
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

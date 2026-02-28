@@ -10,7 +10,7 @@ interface NavbarProps {
 }
 
 const navItems = [
-  { label: 'Home', page: 'home' as PageType, hasDropdown: true },
+  { label: 'Home', page: 'dashboard' as PageType, hasDropdown: true },
   { label: 'Case Studies', page: 'mistakes' as PageType, hasDropdown: false },
   { label: 'Insights', page: 'mistakes' as PageType, hasDropdown: false },
   { label: 'About', page: 'mistakes' as PageType, hasDropdown: false },
@@ -42,7 +42,7 @@ export default function Navbar({ currentPage, onPageChange, isVisible }: NavbarP
       animate={{ y: isVisible ? 0 : -100 }}
       transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled || currentPage !== 'home'
+        isScrolled || currentPage !== 'dashboard'
           ? 'bg-white/95 backdrop-blur-md shadow-sm'
           : 'bg-transparent'
       }`}
@@ -61,7 +61,7 @@ export default function Navbar({ currentPage, onPageChange, isVisible }: NavbarP
                 <button
                   onClick={() => handleNavClick(item.page)}
                   className={`flex items-center px-4 py-2 text-sm font-medium transition-colors duration-200 ${
-                    isScrolled || currentPage !== 'home'
+                    isScrolled || currentPage !== 'dashboard'
                       ? 'text-gray-800 hover:text-[#E91E8C]'
                       : 'text-white hover:text-[#E91E8C]'
                   }`}
@@ -109,9 +109,9 @@ export default function Navbar({ currentPage, onPageChange, isVisible }: NavbarP
 
           {/* Center Logo */}
           <button
-            onClick={() => handleNavClick('home')}
+            onClick={() => handleNavClick('dashboard')}
             className={`text-lg font-medium tracking-wider transition-colors duration-200 ${
-              isScrolled || currentPage !== 'home'
+              isScrolled || currentPage !== 'dashboard'
                 ? 'text-gray-900'
                 : 'text-white'
             }`}
@@ -133,7 +133,7 @@ export default function Navbar({ currentPage, onPageChange, isVisible }: NavbarP
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className={`md:hidden p-2 rounded-lg transition-colors ${
-              isScrolled || currentPage !== 'home'
+              isScrolled || currentPage !== 'dashboard'
                 ? 'text-gray-800 hover:bg-gray-100'
                 : 'text-white hover:bg-white/10'
             }`}
