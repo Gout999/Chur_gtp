@@ -25,6 +25,7 @@ class Settings:
     openai_api_key: str
     anthropic_api_key: str
     minimax_api_key: str
+    minimax_base_url: str
     minimax_group_id: str
     database_url: str
     redis_url: str
@@ -42,6 +43,7 @@ SETTINGS = Settings(
     openai_api_key=_ENV.get("OPENAI_API_KEY", ""),
     anthropic_api_key=_ENV.get("ANTHROPIC_API_KEY", ""),
     minimax_api_key=_ENV.get("MINIMAX_API_KEY", ""),
+    minimax_base_url=_ENV.get("MINIMAX_BASE_URL", "https://api.minimax.io/anthropic"),
     minimax_group_id=_ENV.get("MINIMAX_GROUP_ID", ""),
     database_url=_ENV.get("DATABASE_URL", "postgresql://user:password@localhost:5432/eduguide"),
     redis_url=_ENV.get("REDIS_URL", "redis://localhost:6379/0"),
@@ -59,6 +61,7 @@ SETTINGS = Settings(
 OPENAI_API_KEY = SETTINGS.openai_api_key
 ANTHROPIC_API_KEY = SETTINGS.anthropic_api_key
 MINIMAX_API_KEY = SETTINGS.minimax_api_key
+MINIMAX_BASE_URL = SETTINGS.minimax_base_url
 MINIMAX_GROUP_ID = SETTINGS.minimax_group_id
 DATABASE_URL = SETTINGS.database_url
 REDIS_URL = SETTINGS.redis_url
