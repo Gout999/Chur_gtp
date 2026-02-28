@@ -3,6 +3,10 @@ import { AnimatePresence, motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import HeroSection from '@/sections/HeroSection';
 import TeacherDashboard from '@/sections/TeacherDashboard';
+import TeacherAnalytics from '@/sections/TeacherAnalytics';
+import TeacherAssignmentsPage from '@/sections/TeacherAssignmentsPage';
+import ClassesPage from '@/sections/ClassesPage';
+import AssignmentsPage from '@/sections/AssignmentsPage';
 import StartPage from '@/sections/StartPage';
 import IntroScreen from '@/sections/IntroScreen';
 import RevisionPage from '@/sections/RevisionPage';
@@ -15,7 +19,6 @@ function App() {
   const [currentPage, setCurrentPage] = useState<PageType>('intro');
   const [isNavVisible, setIsNavVisible] = useState(true);
 
-  // Handle page change
   const handlePageChange = useCallback((page: PageType) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -27,7 +30,6 @@ function App() {
     }
   }, []);
 
-  // Handle navbar visibility
   useEffect(() => {
     if (currentPage === 'intro' || currentPage === 'home') {
       setIsNavVisible(false);
@@ -36,24 +38,22 @@ function App() {
     }
   }, [currentPage]);
 
-  // Handle URL hash on load
   useEffect(() => {
     const hash = window.location.hash;
     if (hash) {
       const page = hash.replace('#/', '') as PageType;
-      if (['teacher-dashboard', 'dashboard', 'revision', 'homework', 'mistakes', 'teacher-classes', 'teacher-assignments', 'teacher-analytics'].includes(page)) {
+      if (['teacher-dashboard', 'dashboard', 'revision', 'homework', 'mistakes', 'teacher-classes', 'teacher-assignments', 'teacher-analytics', 'assignments', 'classes'].includes(page)) {
         setCurrentPage(page);
       }
     }
   }, []);
 
-  // Handle browser back/forward
   useEffect(() => {
     const handlePopState = () => {
       const hash = window.location.hash;
       if (hash) {
         const page = hash.replace('#/', '') as PageType;
-        if (['teacher-dashboard', 'dashboard', 'revision', 'homework', 'mistakes'].includes(page)) {
+        if (['teacher-dashboard', 'dashboard', 'revision', 'homework', 'mistakes', 'teacher-classes', 'teacher-assignments', 'teacher-analytics', 'assignments', 'classes'].includes(page)) {
           setCurrentPage(page);
         } else {
           setCurrentPage('home');
@@ -71,7 +71,6 @@ function App() {
     setCurrentPage('home');
   };
 
-  // Page transition variants
   const pageVariants = {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
@@ -88,7 +87,6 @@ function App() {
         );
         
       case 'home':
-        // Only show StartPage - no HeroSection underneath
         return (
           <motion.div
             key="home"
@@ -125,6 +123,71 @@ function App() {
             transition={{ duration: 0.5 }}
           >
             <TeacherDashboard onPageChange={handlePageChange} />
+          </motion.div>
+        );
+
+      case 'teacher-analytics':
+        return (
+          <motion.div
+            key="teacher-analytics"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <TeacherAnalytics onPageChange={handlePageChange} />
+          </motion.div>
+        );
+
+      case 'teacher-assignments':
+        return (
+          <motion.div
+            key="teacher-assignments"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <TeacherAssignmentsPage onPageChange={handlePageChange} />
+          </motion.div>
+        );
+
+      case 'teacher-classes':
+        return (
+          <motion.div
+            key="teacher-classes"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <ClassesPage onPageChange={handlePageChange} />
+          </motion.div>
+        );
+
+      case 'assignments':
+        return (
+          <motion.div
+            key="assignments"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <AssignmentsPage onPageChange={handlePageChange} />
+          </motion.div>
+        );
+
+      case 'classes':
+        return (
+          <motion.div
+            key="classes"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <ClassesPage onPageChange={handlePageChange} />
           </motion.div>
         );
         

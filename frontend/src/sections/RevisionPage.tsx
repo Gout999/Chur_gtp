@@ -1,135 +1,472 @@
-import { motion } from 'framer-motion';
-import { ArrowRight, Lightbulb } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowRight, Lightbulb, Sparkles, FileText, Clock, Calculator, FlaskConical, BookOpen, Upload, X, CheckCircle, Trash2 } from 'lucide-react';
 import type { PageType } from '@/types';
+import './RevisionPage.css';
 
-interface CreatePageProps {
-  onPageChange: (page: PageType) => void;
+interface RevisionPageProps {
+  onPageChange: (_page: PageType) => void;
 }
 
-export default function RevisionPage({ }: CreatePageProps) {
+interface Note {
+  id: string;
+  subject: string;
+  title: string;
+  description: string;
+  color: string;
+  updated: string;
+  pages: number;
+  isCustom?: boolean;
+  fileName?: string;
+}
+
+const subjectIcons: Record<string, React.ElementType> = {
+  Math: Calculator,
+  Science: FlaskConical,
+  History: BookOpen,
+};
+
+const defaultNotes: Note[] = [
+  {
+    id: '1',
+    subject: 'Math',
+    title: 'Factoring Polynomials',
+    description: 'Master the techniques of factoring complex polynomial equations with step-by-step AI breakdowns and visual aids.',
+    color: 'blue',
+    updated: '2h ago',
+    pages: 12
+  },
+  {
+    id: '2',
+    subject: 'Science',
+    title: 'Cellular Respiration',
+    description: 'A comprehensive guide to glycolysis, the Krebs cycle, and electron transport chains simplified by AI.',
+    color: 'emerald',
+    updated: '5h ago',
+    pages: 18
+  },
+  {
+    id: '3',
+    subject: 'History',
+    title: 'The Industrial Revolution',
+    description: 'Key inventions, societal shifts, and economic impacts summarized with AI-generated timelines.',
+    color: 'orange',
+    updated: '1d ago',
+    pages: 24
+  },
+];
+
+// Mock daily papers data (for backend integration)
+const dailyPapers: Note[] = [
+  {
+    id: 'paper-1',
+    subject: 'Science',
+    title: 'Recent Advances in Quantum Computing',
+    description: 'A comprehensive review of quantum computing breakthroughs in 2025, including error correction and practical applications.',
+    color: 'emerald',
+    updated: 'Today',
+    pages: 15,
+  },
+  {
+    id: 'paper-2',
+    subject: 'Math',
+    title: 'New Methods in Algebraic Topology',
+    description: 'Exploring innovative approaches to solving complex topological problems using machine learning algorithms.',
+    color: 'blue',
+    updated: 'Yesterday',
+    pages: 22,
+  },
+  {
+    id: 'paper-3',
+    subject: 'History',
+    title: 'Digital Archives in Modern Historiography',
+    description: 'How AI is revolutionizing historical research through automated document analysis and pattern recognition.',
+    color: 'orange',
+    updated: '2 days ago',
+    pages: 18,
+  },
+];
+
+export default function RevisionPage({ onPageChange }: RevisionPageProps) {
+  const [notes, setNotes] = useState<Note[]>(defaultNotes);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
+  const [noteTitle, setNoteTitle] = useState('');
+  const [noteSubject, setNoteSubject] = useState('Math');
+  const [noteDescription, setNoteDescription] = useState('');
+  const [activeTab, setActiveTab] = useState<'all' | 'collected' | 'papers'>('all');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load saved notes from localStorage on mount
+  useEffect(() => {
+    const savedNotes = localStorage.getItem('revisionNotes');
+    if (savedNotes) {
+      try {
+        const parsed = JSON.parse(savedNotes);
+        setNotes([...defaultNotes, ...parsed]);
+      } catch (e) {
+        console.error('Failed to parse saved notes:', e);
+      }
+    }
+  }, []);
+
+  // Save notes to localStorage whenever custom notes change
+  useEffect(() => {
+    const customNotes = notes.filter(n => n.isCustom);
+    localStorage.setItem('revisionNotes', JSON.stringify(customNotes));
+  }, [notes]);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const newFiles = Array.from(files).map(f => f.name);
+      setUploadedFiles(prev => [...prev, ...newFiles]);
+    }
+  };
+
+  const handleSaveNote = () => {
+    if (!noteTitle.trim()) return;
+
+    const newNote: Note = {
+      id: Date.now().toString(),
+      subject: noteSubject,
+      title: noteTitle,
+      description: noteDescription || `Personal notes for ${noteSubject}`,
+      color: noteSubject === 'Math' ? 'blue' : noteSubject === 'Science' ? 'emerald' : 'orange',
+      updated: 'Just now',
+      pages: uploadedFiles.length > 0 ? uploadedFiles.length : 1,
+      isCustom: true,
+      fileName: uploadedFiles[0]
+    };
+
+    setNotes(prev => [newNote, ...prev]);
+    
+    // Reset form
+    setNoteTitle('');
+    setNoteDescription('');
+    setUploadedFiles([]);
+    setIsUploadModalOpen(false);
+  };
+
+  const handleDeleteNote = (noteId: string) => {
+    setNotes(prev => prev.filter(n => n.id !== noteId));
+  };
+
+  const displayedNotes = activeTab === 'all' 
+    ? [...notes, ...dailyPapers]
+    : activeTab === 'collected'
+    ? notes.filter(n => n.isCustom)
+    : dailyPapers;
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.5 }}
-      className="min-h-screen bg-[#FDFDFD]"
+      transition={{ duration: 0.4 }}
+      className="revision-page"
     >
-      {/* Hero Section */}
-      <div className="relative h-[40vh] overflow-hidden flex items-end pb-12">
-        <div className="absolute inset-0">
-          <img
-            src="/images/revision-bg.jpg"
-            alt="Revision"
-            className="w-full h-full object-cover blur-sm scale-105"
-          />
-          <div className="absolute inset-0 bg-white/70 backdrop-blur-md" />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#FDFDFD]" />
-        </div>
-
-        <div className="relative z-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
+      <main className="page-content">
+        {/* Hero Section */}
+        <section className="hero-section">
+          <motion.div 
+            className="hero-card"
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.6 }}
+            transition={{ delay: 0.1 }}
           >
-            <h1 className="text-gray-900 text-5xl md:text-6xl font-semibold mb-4 tracking-tight">
-              AI Smart Notes
-            </h1>
-            <p className="text-gray-500 text-lg md:text-xl font-medium max-w-2xl">
-              Your personalized, AI-generated revision materials organized for peak performance.
-            </p>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Bento Box Grid Section */}
-      <section className="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          
-          {/* Note Card 1 */}
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1, duration: 0.5 }}
-            className="group relative bg-white rounded-3xl p-8 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:-translate-y-1 hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transition-all duration-300 cursor-pointer overflow-hidden"
-          >
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-indigo-500 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300" />
-            <div className="flex justify-between items-start mb-12">
-              <div className="flex gap-2">
-                <span className="px-3 py-1 bg-blue-50 text-blue-600 text-xs font-semibold rounded-full">Math</span>
-                <span className="px-3 py-1 bg-purple-50 text-purple-600 text-xs font-semibold rounded-full flex items-center gap-1">
-                  <Lightbulb className="w-3 h-3" /> AI Generated
-                </span>
+            <div className="hero-icon">
+              <Sparkles size={32} />
+            </div>
+            <div className="hero-text">
+              <h2>AI-Generated Study Materials</h2>
+              <p>Personalized revision notes tailored to your learning style and curriculum</p>
+            </div>
+            <div className="hero-stats">
+              <div className="hero-stat">
+                <span className="stat-num">{notes.length + dailyPapers.length}</span>
+                <span className="stat-label">Notes</span>
+              </div>
+              <div className="hero-stat">
+                <span className="stat-num">6</span>
+                <span className="stat-label">Subjects</span>
               </div>
             </div>
-            <div>
-              <h3 className="text-2xl font-semibold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">Factoring Polynomials</h3>
-              <p className="text-gray-500 line-clamp-2">Master the techniques of factoring complex polynomial equations with step-by-step AI breakdowns and visual aids.</p>
-            </div>
-            <div className="mt-8 flex items-center text-sm font-medium text-gray-400">
-              <span>Updated 2h ago</span>
-              <ArrowRight className="w-4 h-4 ml-auto opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-blue-600" />
-            </div>
           </motion.div>
+        </section>
 
-          {/* Note Card 2 */}
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-            className="group relative bg-white rounded-3xl p-8 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:-translate-y-1 hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transition-all duration-300 cursor-pointer overflow-hidden"
-          >
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-teal-500 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300" />
-            <div className="flex justify-between items-start mb-12">
-              <div className="flex gap-2">
-                <span className="px-3 py-1 bg-emerald-50 text-emerald-600 text-xs font-semibold rounded-full">Science</span>
-                <span className="px-3 py-1 bg-purple-50 text-purple-600 text-xs font-semibold rounded-full flex items-center gap-1">
-                  <Lightbulb className="w-3 h-3" /> AI Generated
-                </span>
+        {/* Tabs and Upload Button */}
+        <section className="notes-section">
+          <div className="section-header">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="section-title">Your Notes</h2>
+                <p className="section-subtitle">Recently updated study materials</p>
               </div>
-            </div>
-            <div>
-              <h3 className="text-2xl font-semibold text-gray-900 mb-3 group-hover:text-emerald-600 transition-colors">Cellular Respiration</h3>
-              <p className="text-gray-500 line-clamp-2">A comprehensive guide to glycolysis, the Krebs cycle, and electron transport chains simplified by AI.</p>
-            </div>
-            <div className="mt-8 flex items-center text-sm font-medium text-gray-400">
-              <span>Updated 5h ago</span>
-              <ArrowRight className="w-4 h-4 ml-auto opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-emerald-600" />
-            </div>
-          </motion.div>
+              <button
+                onClick={() => setIsUploadModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 mr-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-purple-500/30 hover:scale-105 transition-all duration-300 border border-purple-400/20"
+              >
+                <Upload size={18} />
+                <span>Upload Notes</span>
+              </button>
 
-          {/* Note Card 3 */}
+            </div>
+            
+            {/* Tabs */}
+            <div className="flex gap-4 mt-4">
+              <button
+                onClick={() => setActiveTab('all')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === 'all' 
+                    ? 'bg-gray-900 text-white' 
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                All Notes
+              </button>
+              <button
+                onClick={() => setActiveTab('collected')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === 'collected' 
+                    ? 'bg-purple-600 text-white' 
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                My Collection ({notes.filter(n => n.isCustom).length})
+              </button>
+              <button
+                onClick={() => setActiveTab('papers')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                  activeTab === 'papers' 
+                    ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white' 
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                <Sparkles size={14} />
+                Daily Recommendation
+                <span className="ml-1 px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full">{dailyPapers.length}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Notes Grid */}
+          <div className="notes-grid">
+            {displayedNotes.map((note, index) => {
+              const SubjectIcon = subjectIcons[note.subject] || FileText;
+              const isPaper = note.id.startsWith('paper-');
+              return (
+                <motion.div
+                  key={note.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15 + index * 0.08 }}
+                  className={`note-card ${note.color} ${note.isCustom ? 'custom-note' : ''} ${isPaper ? 'paper-note' : ''}`}
+                >
+                  <div className="card-glow" />
+
+                  <div className="card-header">
+                    <div className="header-left">
+                      <div className="subject-icon-wrapper">
+                        <SubjectIcon size={20} />
+                      </div>
+                      <span className="subject-name">{note.subject}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {note.isCustom && (
+                        <button
+                          onClick={() => handleDeleteNote(note.id)}
+                          className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                      <div className="ai-indicator">
+                        {isPaper ? (
+                          <>
+                            <Sparkles size={12} />
+                            <span>Daily Rec</span>
+                          </>
+                        ) : note.isCustom ? (
+                          <>
+                            <Upload size={12} />
+                            <span>My Note</span>
+                          </>
+                        ) : (
+                          <>
+                            <Lightbulb size={12} />
+                            <span>AI</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="card-body">
+                    <h3 className="note-title">{note.title}</h3>
+                    <p className="note-description">{note.description}</p>
+                  </div>
+
+                  <div className="card-footer">
+                    <div className="footer-meta">
+                      <span className="meta-item">
+                        <FileText size={14} />
+                        {note.pages} pages
+                      </span>
+                      <span className="meta-item">
+                        <Clock size={14} />
+                        {note.updated}
+                      </span>
+                    </div>
+                    
+                    <button className="open-btn">
+                      <span>Open</span>
+                      <ArrowRight size={16} />
+                    </button>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </section>
+      </main>
+
+      {/* Upload Modal */}
+      <AnimatePresence>
+        {isUploadModalOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3, duration: 0.5 }}
-            className="group relative bg-white rounded-3xl p-8 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:-translate-y-1 hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transition-all duration-300 cursor-pointer overflow-hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+            onClick={() => setIsUploadModalOpen(false)}
           >
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-400 to-red-500 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300" />
-            <div className="flex justify-between items-start mb-12">
-              <div className="flex gap-2">
-                <span className="px-3 py-1 bg-orange-50 text-orange-600 text-xs font-semibold rounded-full">History</span>
-                <span className="px-3 py-1 bg-purple-50 text-purple-600 text-xs font-semibold rounded-full flex items-center gap-1">
-                  <Lightbulb className="w-3 h-3" /> AI Generated
-                </span>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden"
+            >
+              {/* Modal Header */}
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Upload Notes</h3>
+                  <p className="text-sm text-gray-500">Add your personal study materials</p>
+                </div>
+                <button 
+                  onClick={() => setIsUploadModalOpen(false)}
+                  className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors"
+                >
+                  <X size={18} />
+                </button>
               </div>
-            </div>
-            <div>
-              <h3 className="text-2xl font-semibold text-gray-900 mb-3 group-hover:text-orange-600 transition-colors">The Industrial Revolution</h3>
-              <p className="text-gray-500 line-clamp-2">Key inventions, societal shifts, and economic impacts summarized with AI-generated timelines.</p>
-            </div>
-            <div className="mt-8 flex items-center text-sm font-medium text-gray-400">
-              <span>Updated 1d ago</span>
-              <ArrowRight className="w-4 h-4 ml-auto opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-orange-600" />
-            </div>
-          </motion.div>
 
-        </div>
-      </section>
+              {/* Modal Content */}
+              <div className="p-6 space-y-4">
+                {/* Title Input */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Note Title</label>
+                  <input
+                    type="text"
+                    value={noteTitle}
+                    onChange={(e) => setNoteTitle(e.target.value)}
+                    placeholder="e.g., Math Chapter 5 Notes"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-purple-400 focus:ring-2 focus:ring-purple-100 outline-none"
+                  />
+                </div>
+
+                {/* Subject Select */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                  <select
+                    value={noteSubject}
+                    onChange={(e) => setNoteSubject(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-purple-400 focus:ring-2 focus:ring-purple-100 outline-none"
+                  >
+                    <option value="Math">Mathematics</option>
+                    <option value="Science">Science</option>
+                    <option value="History">History</option>
+                    <option value="English">English</option>
+                  </select>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
+                  <textarea
+                    value={noteDescription}
+                    onChange={(e) => setNoteDescription(e.target.value)}
+                    placeholder="Brief description of your notes..."
+                    rows={3}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-purple-400 focus:ring-2 focus:ring-purple-100 outline-none resize-none"
+                  />
+                </div>
+
+                {/* Upload Area */}
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-gray-200 rounded-2xl p-6 text-center cursor-pointer hover:border-purple-400 hover:bg-purple-50/30 transition-all"
+                >
+                  <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-purple-100 flex items-center justify-center">
+                    <Upload className="text-purple-600" size={24} />
+                  </div>
+                  <p className="text-gray-900 font-medium text-sm">Click to upload files</p>
+                  <p className="text-xs text-gray-500 mt-1">PDF, DOC, images</p>
+                </div>
+                <input 
+                  ref={fileInputRef}
+                  type="file" 
+                  multiple 
+                  accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                  className="hidden" 
+                  onChange={handleFileUpload}
+                />
+
+                {/* Uploaded Files */}
+                {uploadedFiles.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-gray-700">Uploaded files:</p>
+                    {uploadedFiles.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-2 p-2 bg-green-50 rounded-lg"
+                      >
+                        <CheckCircle className="text-green-600" size={16} />
+                        <span className="flex-1 text-sm text-gray-700 truncate">{file}</span>
+                        <button 
+                          onClick={() => setUploadedFiles(prev => prev.filter((_, i) => i !== index))}
+                          className="text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="px-6 py-4 bg-gray-50 flex gap-3">
+                <button 
+                  onClick={() => setIsUploadModalOpen(false)}
+                  className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-700 font-medium hover:bg-gray-100 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleSaveNote}
+                  disabled={!noteTitle.trim()}
+                  className="flex-1 py-3 rounded-xl bg-purple-600 text-white font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Save to Collection
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

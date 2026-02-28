@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import type { PageType } from '@/types';
 
 interface HeroSectionProps {
   onPageChange: (page: PageType) => void;
+  onReady?: () => void;
 }
 
 interface ColumnData {
@@ -19,8 +20,17 @@ const columns: ColumnData[] = [
   { id: 'mistakes', label: 'Mistakes', image: '/images/mistakes-bg.jpg', color: 'from-yellow-500/20' },
 ];
 
-export default function HeroSection({ onPageChange }: HeroSectionProps) {
+export default function HeroSection({ onPageChange, onReady }: HeroSectionProps) {
   const [hoveredColumn, setHoveredColumn] = useState<PageType | null>(null);
+
+  // Notify parent that dashboard is ready
+  useEffect(() => {
+    if (onReady) {
+      // Small delay to ensure rendering is complete
+      const timer = setTimeout(onReady, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [onReady]);
 
   const getColumnWidth = (columnId: PageType) => {
     if (!hoveredColumn) return '33.333%';
@@ -35,7 +45,6 @@ export default function HeroSection({ onPageChange }: HeroSectionProps) {
         {columns.map((column, index) => (
           <motion.div
             key={column.id}
-            
             animate={{ 
               opacity: 1, 
               y: 0,

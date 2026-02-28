@@ -18,31 +18,26 @@ interface FloatingObject {
 }
 
 const educationalImages = [
-  '/assets/books.png',
-  '/assets/pencil.png',
-  '/assets/graduation-cap.png',
-  '/assets/apple.png',
-  '/assets/globe.png',
-  '/assets/calculator.png',
-  '/assets/palette.png',
-  '/assets/microscope.png',
-  '/assets/trophy.png',
-  '/assets/music-notes.png',
-  '/assets/ruler.png',
-  '/assets/scissors.png',
-  '/assets/backpack.png',
-  '/assets/lightbulb.png',
+  '/assets/picture/098182f29c60f84d2db5c72c7190fb58.png',
+  '/assets/picture/0e83da753f7fe80038dfb5fc9def8a10.png',
+  '/assets/picture/32b58dd17aad594934f61cdcc4c49407.png',
+  '/assets/picture/4c759442ae8486875b4c3303cc0b9a17.png',
+  '/assets/picture/52ad4490f8be7c81cb513e7c36f4565a.png',
+  '/assets/picture/6ae446336571030d36e80d28ae1bfff0.png',
+  '/assets/picture/709235e9a772426b94763e9ac5d3f384.png',
+  '/assets/picture/c7836d434605eac8adc940493504637d.png',
+  '/assets/picture/d0c77fe6521474e525424fdaf58fc9f1.png',
+  '/assets/picture/d57469949aeaedbf6c7677c7e0ef35f3.png',
+  '/assets/picture/098182f29c60f84d2db5c72c7190fb58.png',
+  '/assets/picture/0e83da753f7fe80038dfb5fc9def8a10.png',
+  '/assets/picture/32b58dd17aad594934f61cdcc4c49407.png',
 ]
 
-// Spawn distance (far away)
 const SPAWN_Z = -3000
-// Reset distance (when object passes camera)
 const RESET_Z = 500
-// Default auto-move speed
 const DEFAULT_SPEED = 150
 
-// Transition phases
- type TransitionPhase = 'idle' | 'zooming' | 'whiteout' | 'showName' | 'circleExpand' | 'complete'
+type TransitionPhase = 'idle' | 'zooming' | 'showName' | 'circleExpand' | 'complete'
 
 interface StartPageProps {
   onPageChange: (page: PageType) => void;
@@ -50,12 +45,13 @@ interface StartPageProps {
 
 export default function StartPage({ onPageChange }: StartPageProps) {
   const [objects, setObjects] = useState<FloatingObject[]>([])
-    const [hoveredObject, setHoveredObject] = useState<number | null>(null)
+  const [hoveredObject, setHoveredObject] = useState<number | null>(null)
   const [transitionPhase, setTransitionPhase] = useState<TransitionPhase>('idle')
   const [cameraZ, setCameraZ] = useState(0)
   const [whiteOpacity, setWhiteOpacity] = useState(0)
   const [circleScale, setCircleScale] = useState(0)
   const [nameOpacity, setNameOpacity] = useState(0)
+  const [startPageOpacity, setStartPageOpacity] = useState(1)
   
   const containerRef = useRef<HTMLDivElement>(null)
   const animationFrameRef = useRef<number | null>(null)
@@ -63,13 +59,12 @@ export default function StartPage({ onPageChange }: StartPageProps) {
   const currentSpeedRef = useRef(1)
   const transitionStartTime = useRef<number | null>(null)
   const transitionTargetRef = useRef<PageType>('dashboard')
+  const hasCalledPageChange = useRef(false)
 
-  // Initialize floating objects
   useEffect(() => {
     const initialObjects: FloatingObject[] = educationalImages.map((image, index) => {
       const zSpacing = 250
       const initialZ = SPAWN_Z + (index * zSpacing) + Math.random() * 100
-      
       const angle = Math.random() * Math.PI * 2
       const radius = 100 + Math.random() * 300
       
@@ -81,7 +76,7 @@ export default function StartPage({ onPageChange }: StartPageProps) {
         z: initialZ,
         baseX: Math.cos(angle) * radius,
         baseY: Math.sin(angle) * radius * 0.6,
-        size: 100 + Math.random() * 80,
+        size: 110 + Math.random() * 88,  // Increased 10%
         rotation: Math.random() * 360,
         rotationSpeed: (Math.random() - 0.5) * 0.2,
         speed: DEFAULT_SPEED + Math.random() * 50,
@@ -90,7 +85,6 @@ export default function StartPage({ onPageChange }: StartPageProps) {
     setObjects(initialObjects)
   }, [])
 
-  // Handle wheel event for speed control
   const handleWheel = useCallback((e: WheelEvent) => {
     if (transitionPhase !== 'idle') {
       e.preventDefault()
@@ -103,7 +97,6 @@ export default function StartPage({ onPageChange }: StartPageProps) {
     targetSpeedRef.current = Math.max(-2, Math.min(5, targetSpeedRef.current))
   }, [transitionPhase])
 
-  // Add wheel event listener
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
@@ -115,25 +108,22 @@ export default function StartPage({ onPageChange }: StartPageProps) {
     }
   }, [handleWheel])
 
-  // Start transition to student page
   const studentTransition = useCallback(() => {
     if (transitionPhase !== 'idle') return
+    hasCalledPageChange.current = false
     transitionTargetRef.current = 'dashboard'
     setTransitionPhase('zooming')
     transitionStartTime.current = performance.now()
   }, [transitionPhase])
 
-  // Start transition to teacher dashboard
   const teacherTransition = useCallback(() => {
     if (transitionPhase !== 'idle') return
+    hasCalledPageChange.current = false
     transitionTargetRef.current = 'teacher-dashboard'
     setTransitionPhase('zooming')
     transitionStartTime.current = performance.now()
   }, [transitionPhase])
 
-  
-
-  // Animation loop
   useEffect(() => {
     let lastTime = performance.now()
     
@@ -141,28 +131,15 @@ export default function StartPage({ onPageChange }: StartPageProps) {
       const deltaTime = (time - lastTime) / 1000
       lastTime = time
       
-      // Handle transition phases
       if (transitionPhase === 'zooming') {
         const elapsed = time - (transitionStartTime.current || time)
-        const progress = Math.min(elapsed / 1900, 1) // 1.9 seconds zoom (reduced 0.1s)
+        const progress = Math.min(elapsed / 1900, 1)
         
-        // Move camera forward (negative Z means moving into the scene)
         const targetCameraZ = -2500
         const newCameraZ = targetCameraZ * easeInOutCubic(progress)
         setCameraZ(newCameraZ)
         
-        // Slow down speed during zoom
         targetSpeedRef.current = 0.2
-        
-        if (progress >= 1) {
-          setTransitionPhase('whiteout')
-          transitionStartTime.current = time
-        }
-      } else if (transitionPhase === 'whiteout') {
-        const elapsed = time - (transitionStartTime.current || time)
-        const progress = Math.min(elapsed / 800, 1)
-        
-        setWhiteOpacity(progress)
         
         if (progress >= 1) {
           setTransitionPhase('showName')
@@ -171,33 +148,47 @@ export default function StartPage({ onPageChange }: StartPageProps) {
       } else if (transitionPhase === 'showName') {
         const elapsed = time - (transitionStartTime.current || time)
         
+        if (elapsed < 200) {
+          setWhiteOpacity(elapsed / 200)
+        } else {
+          setWhiteOpacity(1)
+        }
+        
         if (elapsed < 300) {
           setNameOpacity(elapsed / 300)
-        } else if (elapsed > 1000) {
-          setNameOpacity(Math.max(0, 1 - (elapsed - 1000) / 300))
+        } else if (elapsed > 1500) {
+          setNameOpacity(Math.max(0, 1 - (elapsed - 1500) / 500))
         } else {
           setNameOpacity(1)
         }
         
-        if (elapsed > 1300) {
+        if (elapsed > 2000) {
           setTransitionPhase('circleExpand')
           transitionStartTime.current = time
         }
       } else if (transitionPhase === 'circleExpand') {
         const elapsed = time - (transitionStartTime.current || time)
-        const progress = Math.min(elapsed / 2200, 1) // 2.2 seconds circle expand (slower)
+        const progress = Math.min(elapsed / 3500, 1) // 3.5 seconds for slower animation
         
         setCircleScale(easeOutCubic(progress) * 150)
         
+        // Early call to load dashboard at 60% progress
+        if (progress >= 0.6 && !hasCalledPageChange.current) {
+          hasCalledPageChange.current = true
+          onPageChange(transitionTargetRef.current)
+        }
+        
+        // Fade out StartPage at 80% progress
+        if (progress >= 0.8) {
+          const fadeProgress = (progress - 0.8) / 0.2
+          setStartPageOpacity(1 - fadeProgress)
+        }
+        
         if (progress >= 1) {
           setTransitionPhase('complete')
-          setTimeout(() => {
-            onPageChange(transitionTargetRef.current)
-          }, 100)
         }
       }
       
-      // Normal object animation
       if (transitionPhase !== 'complete') {
         const speedDiff = targetSpeedRef.current - currentSpeedRef.current
         currentSpeedRef.current += speedDiff * 3 * deltaTime
@@ -237,9 +228,8 @@ export default function StartPage({ onPageChange }: StartPageProps) {
         cancelAnimationFrame(animationFrameRef.current)
       }
     }
-  }, [transitionPhase])
+  }, [transitionPhase, onPageChange])
 
-  // Easing functions
   const easeInOutCubic = (t: number) => {
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
   }
@@ -248,7 +238,6 @@ export default function StartPage({ onPageChange }: StartPageProps) {
     return 1 - Math.pow(1 - t, 3)
   }
 
-  // Calculate 3D transform for each object
   const getObjectStyle = (obj: FloatingObject) => {
     const perspective = 600
     const effectiveZ = obj.z - cameraZ
@@ -291,14 +280,22 @@ export default function StartPage({ onPageChange }: StartPageProps) {
     }
   }
 
+  if (transitionPhase === 'complete') {
+    return null
+  }
+
   return (
-    <div className="startpage-root app" ref={containerRef} style={transitionPhase === 'circleExpand' || transitionPhase === 'complete' ? { 
-    maskImage: `radial-gradient(circle at center, transparent 0%, transparent ${circleScale}vmax, black ${circleScale + 0.1}vmax, black 100%)`,
-    WebkitMaskImage: `radial-gradient(circle at center, transparent 0%, transparent ${circleScale}vmax, black ${circleScale + 0.1}vmax, black 100%)`
-  } : {}}>
-      {/* 3D Scene Container */}
+    <div 
+      className="startpage-root app" 
+      ref={containerRef} 
+      style={{ 
+        opacity: startPageOpacity,
+        transition: 'opacity 0.3s ease-out',
+        maskImage: transitionPhase === 'circleExpand' ? `radial-gradient(circle at center, transparent 0%, transparent ${circleScale}vmax, black ${circleScale + 0.1}vmax, black 100%)` : undefined,
+        WebkitMaskImage: transitionPhase === 'circleExpand' ? `radial-gradient(circle at center, transparent 0%, transparent ${circleScale}vmax, black ${circleScale + 0.1}vmax, black 100%)` : undefined,
+      }}
+    >
       <div className="scene-container">
-        {/* Header */}
         <header className="header">
           <div className="search-container">
             <button className="menu-btn">
@@ -311,7 +308,6 @@ export default function StartPage({ onPageChange }: StartPageProps) {
           </div>
         </header>
 
-        {/* 3D Objects */}
         <div className={`objects-3d-container ${transitionPhase !== 'idle' ? 'transitioning' : ''}`}>
           {objects.map((obj) => (
             <div
@@ -335,7 +331,6 @@ export default function StartPage({ onPageChange }: StartPageProps) {
         </div>
       </div>
 
-      {/* Bottom Controls */}
       {transitionPhase === 'idle' && (
         <div className="bottom-controls">
           <button 
@@ -355,14 +350,12 @@ export default function StartPage({ onPageChange }: StartPageProps) {
         </div>
       )}
 
-      {/* White Overlay */}
       <div 
         className="white-overlay"
         style={{ opacity: whiteOpacity }}
       />
 
-      {/* Name Display */}
-      {transitionPhase === 'showName' && (
+      {(transitionPhase === 'showName' || transitionPhase === 'circleExpand') && (
         <div 
           className="name-display"
           style={{ opacity: nameOpacity }}
@@ -371,10 +364,6 @@ export default function StartPage({ onPageChange }: StartPageProps) {
           <p>學生學習平台</p>
         </div>
       )}
-
-
     </div>
   )
 }
-
-

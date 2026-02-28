@@ -15,10 +15,11 @@ export default function Navbar({ currentPage, onPageChange, isVisible }: NavbarP
 
   // Dynamic navigation items based on current page
   const getNavItems = () => {
-    const isTeacher = currentPage === 'teacher-dashboard';
+    const teacherPages = ['teacher-dashboard', 'teacher-classes', 'teacher-assignments', 'teacher-analytics'];
+    const isTeacher = teacherPages.includes(currentPage);
     
     if (isTeacher) {
-      // Teacher Dashboard: Home, Classes, Assignments, Analytics
+      // Teacher Navigation: Home, Classes, Assignments, Analytics
       return [
         { label: 'Home', page: 'home' as PageType },
         { label: 'Classes', page: 'teacher-classes' as PageType },
@@ -26,11 +27,11 @@ export default function Navbar({ currentPage, onPageChange, isVisible }: NavbarP
         { label: 'Analytics', page: 'teacher-analytics' as PageType },
       ];
     } else {
-      // Student Dashboard: Home, Revision, Homework, Mistakes
+      // Student Navigation: Home, Revision, Assignments, Mistakes
       return [
         { label: 'Home', page: 'home' as PageType },
         { label: 'Revision', page: 'revision' as PageType },
-        { label: 'Homework', page: 'homework' as PageType },
+        { label: 'Assignments', page: 'assignments' as PageType },
         { label: 'Mistakes', page: 'mistakes' as PageType },
       ];
     }
@@ -96,16 +97,10 @@ export default function Navbar({ currentPage, onPageChange, isVisible }: NavbarP
             chur-gpt.
           </button>
 
-          {/* Right CTA - Only show for student dashboard */}
+          {/* Right CTA - Disabled */}
           <div className="hidden md:block">
-            <button
-              onClick={() => handleNavClick('mistakes')}
-              className="btn-dark text-sm"
-            >
-              Contact us Today
-            </button>
+            {/* Button removed as requested */}
           </div>
-
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -144,12 +139,7 @@ export default function Navbar({ currentPage, onPageChange, isVisible }: NavbarP
                   {item.label}
                 </button>
               ))}
-              <button
-                onClick={() => handleNavClick('mistakes')}
-                className="btn-dark w-full text-center mt-4"
-              >
-                Contact us Today
-              </button>
+              {/* Mobile CTA button removed */}
             </div>
           </motion.div>
         )}
