@@ -1,0 +1,612 @@
+[
+    {
+        "category":  "functional",
+        "description":  "Health endpoint returns service status.",
+        "steps":  [
+                      "Step 1: Start FastAPI service.",
+                      "Step 2: Call GET /health.",
+                      "Step 3: Verify JSON contains status=ok."
+                  ],
+        "passes":  true
+    },
+    {
+        "category":  "functional",
+        "description":  "Graph routes event types to the correct first agent node.",
+        "steps":  [
+                      "Step 1: Build state with event_type=file_upload.",
+                      "Step 2: Call route_by_event_type.",
+                      "Step 3: Verify route is pedagogical_architect.",
+                      "Step 4: Repeat for student_message and new_content_detected."
+                  ],
+        "passes":  true
+    },
+    {
+        "category":  "functional",
+        "description":  "Shared memory supports write/read/read_all/update operations.",
+        "steps":  [
+                      "Step 1: Instantiate SharedMemoryClient.",
+                      "Step 2: Write an entry to a test namespace.",
+                      "Step 3: Read the same key and verify payload.",
+                      "Step 4: Update the key and verify updated_at changed.",
+                      "Step 5: Read all and ensure list contains the entry."
+                  ],
+        "passes":  true
+    },
+    {
+        "category":  "functional",
+        "description":  "Pedagogical Architect node handles upload events and records authority update.",
+        "steps":  [
+                      "Step 1: Build state with event_type=file_upload and file_path.",
+                      "Step 2: Execute pedagogical_architect_node.",
+                      "Step 3: Verify current_agent is pedagogical_architect.",
+                      "Step 4: Verify tools_to_call includes ingest_material.",
+                      "Step 5: Verify loop_count increments."
+                  ],
+        "passes":  true
+    },
+    {
+        "category":  "functional",
+        "description":  "Socratic Companion node creates hint and updates cognition model.",
+        "steps":  [
+                      "Step 1: Build state with student_message payload.",
+                      "Step 2: Execute socratic_companion_node.",
+                      "Step 3: Verify response_to_student exists.",
+                      "Step 4: Verify tools_to_call includes construct_hint.",
+                      "Step 5: Verify cognitive model is written to shared memory."
+                  ],
+        "passes":  true
+    },
+    {
+        "category":  "functional",
+        "description":  "Curiosity Catalyst node monitors resources and creates a briefing payload.",
+        "steps":  [
+                      "Step 1: Build state with new_content_detected payload.",
+                      "Step 2: Execute curiosity_catalyst_node.",
+                      "Step 3: Verify tools_to_call includes arxiv/github/briefing tools.",
+                      "Step 4: Verify pending_validations write happened.",
+                      "Step 5: Verify notifications list shape is valid."
+                  ],
+        "passes":  true
+    },
+    {
+        "category":  "functional",
+        "description":  "Baseline tests for unit/integration/e2e core flow pass in CI-like local run.",
+        "steps":  [
+                      "Step 1: Run pytest on architect unit test.",
+                      "Step 2: Run pytest on memory integration test.",
+                      "Step 3: Run pytest on teaching flow e2e smoke test.",
+                      "Step 4: Verify all selected tests pass."
+                  ],
+        "passes":  true
+    },
+    {
+        "category":  "functional",
+        "description":  "Teacher material upload endpoint persists upload metadata into teacher_uploads namespace.",
+        "steps":  [
+                      "Step 1: Call POST /api/v1/teacher/materials/upload with required payload.",
+                      "Step 2: Validate request schema.",
+                      "Step 3: Generate material_id.",
+                      "Step 4: Write metadata into teacher_uploads namespace.",
+                      "Step 5: Return accepted response with material_id and status.",
+                      "Step 6: Verify value can be read back from shared memory."
+                  ],
+        "passes":  true
+    },
+    {
+        "category":  "functional",
+        "description":  "Teacher material status endpoint returns parse/index status by material_id.",
+        "steps":  [
+                      "Step 1: Create one uploaded material record.",
+                      "Step 2: Call GET /api/v1/teacher/materials/{material_id}/status.",
+                      "Step 3: Verify status and timestamps are returned.",
+                      "Step 4: Verify 404 for unknown material_id."
+                  ],
+        "passes":  true
+    },
+    {
+        "category":  "functional",
+        "description":  "Teacher boundary adjustment endpoint records strictness updates.",
+        "steps":  [
+                      "Step 1: Upload a material.",
+                      "Step 2: Call PUT /api/v1/teacher/materials/{material_id}/boundary.",
+                      "Step 3: Validate strictness enum.",
+                      "Step 4: Write adjustment to teacher_boundary_adjustments.",
+                      "Step 5: Return updated setting payload."
+                  ],
+        "passes":  true
+    },
+    {
+        "category":  "functional",
+        "description":  "Teacher importance marking endpoint stores concept importance signals.",
+        "steps":  [
+                      "Step 1: Upload a material and prepare concept nodes.",
+                      "Step 2: Call PUT /api/v1/teacher/materials/{material_id}/importance.",
+                      "Step 3: Validate concept and importance level fields.",
+                      "Step 4: Write entries to teacher_importance_marks.",
+                      "Step 5: Return saved marks count."
+                  ],
+        "passes":  true
+    },
+    {
+        "category":  "functional",
+        "description":  "Teacher knowledge-graph endpoint returns authority graph fragments for a material.",
+        "steps":  [
+                      "Step 1: Ensure teacher_authority_graph has seed data.",
+                      "Step 2: Call GET /api/v1/teacher/materials/{material_id}/knowledge-graph.",
+                      "Step 3: Verify nodes and edges arrays are returned.",
+                      "Step 4: Verify empty graph fallback for unknown material.",
+                      "Step 5: Validate stable response schema."
+                  ],
+        "passes":  true
+    },
+    {
+        "category":  "functional",
+        "description":  "Teacher material delete endpoint removes material metadata and related marks.",
+        "steps":  [
+                      "Step 1: Upload material and create boundary and importance records.",
+                      "Step 2: Confirm records exist in related namespaces.",
+                      "Step 3: Call DELETE /api/v1/teacher/materials/{material_id}.",
+                      "Step 4: Soft-delete or hard-delete policy is applied.",
+                      "Step 5: Verify material status endpoint now returns not found.",
+                      "Step 6: Verify related boundary entries are removed or marked archived.",
+                      "Step 7: Verify related importance marks are removed or marked archived.",
+                      "Step 8: Verify audit entry is recorded for delete action.",
+                      "Step 9: Verify repeated delete is idempotent.",
+                      "Step 10: Verify API returns deterministic response code and payload.",
+                      "Step 11: Run regression check for unaffected materials."
+                  ],
+        "passes":  true
+    },
+    {
+        "category":  "functional",
+        "description":  "Class overview endpoint returns aggregate stats for a class.",
+        "steps":  [
+                      "Step 1: Seed class-level interaction and escalation data.",
+                      "Step 2: Call GET /api/v1/teacher/classes/{class_id}/overview.",
+                      "Step 3: Verify totals, trends, and risk counters.",
+                      "Step 4: Verify unknown class handling."
+                  ],
+        "passes":  true
+    },
+    {
+        "category":  "functional",
+        "description":  "Class student list endpoint returns roster with learning indicators.",
+        "steps":  [
+                      "Step 1: Seed class roster data.",
+                      "Step 2: Call GET /api/v1/teacher/classes/{class_id}/students.",
+                      "Step 3: Verify paging and student summary fields.",
+                      "Step 4: Verify sorting is deterministic."
+                  ],
+        "passes":  true
+    },
+    {
+        "category":  "functional",
+        "description":  "Student detail endpoint returns profile and current learning state.",
+        "steps":  [
+                      "Step 1: Seed one student profile.",
+                      "Step 2: Call GET /api/v1/teacher/students/{student_id}.",
+                      "Step 3: Verify identity and metadata fields.",
+                      "Step 4: Verify 404 for unknown student."
+                  ],
+        "passes":  true
+    },
+    {
+        "category":  "functional",
+        "description":  "Student cognition endpoint maps shared cognitive model to teacher response schema.",
+        "steps":  [
+                      "Step 1: Seed student_cognitive_models namespace.",
+                      "Step 2: Call GET /api/v1/teacher/students/{student_id}/cognition.",
+                      "Step 3: Verify misconception and mastery fields.",
+                      "Step 4: Verify safe defaults for missing model."
+                  ],
+        "passes":  true
+    },
+    {
+        "category":  "functional",
+        "description":  "Agent logs endpoint returns decision and tool traces for a student.",
+        "steps":  [
+                      "Step 1: Seed interaction_episodes with trace-like entries.",
+                      "Step 2: Call GET /api/v1/teacher/students/{student_id}/agent-logs.",
+                      "Step 3: Verify logs are time-ordered.",
+                      "Step 4: Verify sensitive fields are redacted."
+                  ],
+        "passes":  true
+    },
+    {
+        "category":  "functional",
+        "description":  "Interaction history endpoint supports filters for date range and topic.",
+        "steps":  [
+                      "Step 1: Seed interaction_episodes across dates and topics.",
+                      "Step 2: Call GET /api/v1/teacher/students/{student_id}/interactions.",
+                      "Step 3: Apply date filter and verify narrowed results.",
+                      "Step 4: Apply topic filter and verify narrowed results.",
+                      "Step 5: Verify pagination behavior."
+                  ],
+        "passes":  true
+    },
+    {
+        "category":  "functional",
+        "description":  "Escalation list endpoint reads pending_escalations and returns teacher queue.",
+        "steps":  [
+                      "Step 1: Seed pending_escalations records.",
+                      "Step 2: Call GET /api/v1/teacher/escalations.",
+                      "Step 3: Verify queue ordering by urgency/time.",
+                      "Step 4: Verify empty queue response."
+                  ],
+        "passes":  true
+    },
+    {
+        "category":  "functional",
+        "description":  "Escalation detail endpoint returns one escalation with interaction context.",
+        "steps":  [
+                      "Step 1: Seed one escalation with references to interactions.",
+                      "Step 2: Call GET /api/v1/teacher/escalations/{escalation_id}.",
+                      "Step 3: Verify reason, context, and student fields.",
+                      "Step 4: Verify 404 for unknown escalation_id."
+                  ],
+        "passes":  true
+    },
+    {
+        "category":  "functional",
+        "description":  "Escalation response endpoint stores teacher decision and clears pending item.",
+        "steps":  [
+                      "Step 1: Seed one pending escalation.",
+                      "Step 2: Call POST /api/v1/teacher/escalations/{escalation_id}/respond.",
+                      "Step 3: Validate response action payload.",
+                      "Step 4: Write decision to teacher_escalation_responses.",
+                      "Step 5: Mark pending escalation as resolved.",
+                      "Step 6: Verify returned state includes resolver and timestamp."
+                  ],
+        "passes":  true
+    },
+    {
+        "category":  "functional",
+        "description":  "Teacher send-message endpoint writes directed messages to teacher_student_messages.",
+        "steps":  [
+                      "Step 1: Prepare message payload with teacher_id and student_id.",
+                      "Step 2: Call POST /api/v1/teacher/messages/send.",
+                      "Step 3: Validate content and channel.",
+                      "Step 4: Persist message with created_at.",
+                      "Step 5: Return message_id and delivery_state."
+                  ],
+        "passes":  true
+    },
+    {
+        "category":  "functional",
+        "description":  "Conversation endpoint returns student conversation history including teacher inserts.",
+        "steps":  [
+                      "Step 1: Seed teacher_student_messages for one student.",
+                      "Step 2: Call GET /api/v1/teacher/messages/conversations/{student_id}.",
+                      "Step 3: Verify chronological ordering.",
+                      "Step 4: Verify sender role labeling.",
+                      "Step 5: Verify pagination metadata."
+                  ],
+        "passes":  true
+    },
+    {
+        "category":  "functional",
+        "description":  "Companion pause/resume endpoint updates companion_control namespace.",
+        "steps":  [
+                      "Step 1: Call PUT /api/v1/teacher/companion/pause with pause=true.",
+                      "Step 2: Verify companion_control state updated.",
+                      "Step 3: Call again with pause=false.",
+                      "Step 4: Verify resume state persisted."
+                  ],
+        "passes":  true
+    },
+    {
+        "category":  "functional",
+        "description":  "Teacher global config GET endpoint returns defaults when no explicit config exists.",
+        "steps":  [
+                      "Step 1: Ensure teacher_configurations is empty for teacher.",
+                      "Step 2: Call GET /api/v1/teacher/config.",
+                      "Step 3: Verify default config schema is returned.",
+                      "Step 4: Verify enum fields are valid."
+                  ],
+        "passes":  false
+    },
+    {
+        "category":  "functional",
+        "description":  "Teacher global config PUT endpoint validates and persists values.",
+        "steps":  [
+                      "Step 1: Build valid config payload.",
+                      "Step 2: Call PUT /api/v1/teacher/config.",
+                      "Step 3: Validate payload schema and ranges.",
+                      "Step 4: Persist into teacher_configurations.",
+                      "Step 5: Verify GET reflects updated values."
+                  ],
+        "passes":  false
+    },
+    {
+        "category":  "functional",
+        "description":  "Class-specific config GET endpoint resolves overrides over global defaults.",
+        "steps":  [
+                      "Step 1: Seed global config and one class override.",
+                      "Step 2: Call GET /api/v1/teacher/classes/{class_id}/config.",
+                      "Step 3: Verify merged config result.",
+                      "Step 4: Verify fallback when class override missing."
+                  ],
+        "passes":  false
+    },
+    {
+        "category":  "functional",
+        "description":  "Class-specific config PUT endpoint stores override payload by class_id.",
+        "steps":  [
+                      "Step 1: Create class config payload.",
+                      "Step 2: Call PUT /api/v1/teacher/classes/{class_id}/config.",
+                      "Step 3: Validate allowed override fields.",
+                      "Step 4: Persist class override and timestamp.",
+                      "Step 5: Confirm GET returns the override."
+                  ],
+        "passes":  false
+    },
+    {
+        "category":  "functional",
+        "description":  "Notification preference endpoint updates delivery and threshold settings.",
+        "steps":  [
+                      "Step 1: Build notification preference payload.",
+                      "Step 2: Call PUT /api/v1/teacher/config/notifications.",
+                      "Step 3: Validate delivery channels.",
+                      "Step 4: Persist and verify round-trip via GET config."
+                  ],
+        "passes":  false
+    },
+    {
+        "category":  "functional",
+        "description":  "Lesson plan generation endpoint creates plan draft from goal and materials.",
+        "steps":  [
+                      "Step 1: Seed material references and authority graph snippets.",
+                      "Step 2: Call POST /api/v1/teacher/lesson-plans/generate.",
+                      "Step 3: Validate request includes objective and class context.",
+                      "Step 4: Build generated section structure.",
+                      "Step 5: Write plan record into teacher_lesson_plans.",
+                      "Step 6: Return plan_id and preview data."
+                  ],
+        "passes":  false
+    },
+    {
+        "category":  "functional",
+        "description":  "Lesson plan detail endpoint fetches one plan by plan_id.",
+        "steps":  [
+                      "Step 1: Seed one lesson plan record.",
+                      "Step 2: Call GET /api/v1/teacher/lesson-plans/{plan_id}.",
+                      "Step 3: Verify sections, objectives, and metadata.",
+                      "Step 4: Verify 404 for missing plan_id."
+                  ],
+        "passes":  false
+    },
+    {
+        "category":  "functional",
+        "description":  "Lesson plan update endpoint supports teacher edits and version bump.",
+        "steps":  [
+                      "Step 1: Seed one lesson plan with version=1.",
+                      "Step 2: Call PUT /api/v1/teacher/lesson-plans/{plan_id}.",
+                      "Step 3: Validate editable fields.",
+                      "Step 4: Persist update with version increment.",
+                      "Step 5: Verify updated_at and edited_by fields."
+                  ],
+        "passes":  false
+    },
+    {
+        "category":  "functional",
+        "description":  "Lesson plan delete endpoint archives or removes plan safely.",
+        "steps":  [
+                      "Step 1: Seed one lesson plan.",
+                      "Step 2: Call DELETE /api/v1/teacher/lesson-plans/{plan_id}.",
+                      "Step 3: Verify plan is not returned by detail endpoint.",
+                      "Step 4: Verify idempotent behavior for repeated delete."
+                  ],
+        "passes":  false
+    },
+    {
+        "category":  "functional",
+        "description":  "PPT generation endpoint creates generated_ppts job and output metadata.",
+        "steps":  [
+                      "Step 1: Seed one lesson plan.",
+                      "Step 2: Call POST /api/v1/teacher/lesson-plans/{plan_id}/ppt.",
+                      "Step 3: Validate template name input.",
+                      "Step 4: Create ppt job with pending status.",
+                      "Step 5: Produce output metadata path placeholders.",
+                      "Step 6: Write generated_ppts entry.",
+                      "Step 7: Return ppt_id and polling URL."
+                  ],
+        "passes":  false
+    },
+    {
+        "category":  "functional",
+        "description":  "PPT status endpoint supports pending/running/completed/failed states.",
+        "steps":  [
+                      "Step 1: Seed generated_ppts job with each status variant.",
+                      "Step 2: Call GET /api/v1/teacher/ppt/{ppt_id}/status.",
+                      "Step 3: Verify status payload includes progress details.",
+                      "Step 4: Verify 404 for unknown ppt_id."
+                  ],
+        "passes":  false
+    },
+    {
+        "category":  "functional",
+        "description":  "PPT download endpoint returns a stable URL or signed token.",
+        "steps":  [
+                      "Step 1: Seed completed generated_ppts record with file path.",
+                      "Step 2: Call GET /api/v1/teacher/ppt/{ppt_id}/download.",
+                      "Step 3: Verify response includes downloadable location.",
+                      "Step 4: Verify non-completed jobs are rejected."
+                  ],
+        "passes":  false
+    },
+    {
+        "category":  "functional",
+        "description":  "PPT preview endpoint returns image list for slideshow preview.",
+        "steps":  [
+                      "Step 1: Seed preview image metadata for a completed job.",
+                      "Step 2: Call GET /api/v1/teacher/ppt/{ppt_id}/preview.",
+                      "Step 3: Verify image URLs and slide order.",
+                      "Step 4: Verify empty preview fallback when none exists."
+                  ],
+        "passes":  false
+    },
+    {
+        "category":  "functional",
+        "description":  "Lesson template listing endpoint returns available template metadata.",
+        "steps":  [
+                      "Step 1: Seed template metadata registry.",
+                      "Step 2: Call GET /api/v1/teacher/lesson-templates.",
+                      "Step 3: Verify template ids, labels, and preview info.",
+                      "Step 4: Verify deterministic ordering."
+                  ],
+        "passes":  false
+    },
+    {
+        "category":  "functional",
+        "description":  "Skill manifest and entry for material_manager are runnable and aligned with tool names.",
+        "steps":  [
+                      "Step 1: Validate skills/material_manager/skill.yaml exists.",
+                      "Step 2: Validate tools list includes all material operations.",
+                      "Step 3: Run entry.py with sample JSON args.",
+                      "Step 4: Verify machine-readable response format."
+                  ],
+        "passes":  false
+    },
+    {
+        "category":  "functional",
+        "description":  "Skill manifest and entry for monitor_dashboard are runnable and aligned with tool names.",
+        "steps":  [
+                      "Step 1: Validate skills/monitor_dashboard/skill.yaml exists.",
+                      "Step 2: Validate tools list includes monitor operations.",
+                      "Step 3: Run entry.py with sample JSON args.",
+                      "Step 4: Verify machine-readable response format."
+                  ],
+        "passes":  false
+    },
+    {
+        "category":  "functional",
+        "description":  "Skill manifest and entry for intervene_console are runnable and aligned with tool names.",
+        "steps":  [
+                      "Step 1: Validate skills/intervene_console/skill.yaml exists.",
+                      "Step 2: Validate tools list includes intervene operations.",
+                      "Step 3: Run entry.py with sample JSON args.",
+                      "Step 4: Verify machine-readable response format."
+                  ],
+        "passes":  false
+    },
+    {
+        "category":  "functional",
+        "description":  "Skill manifest and entry for config_manager are runnable and aligned with tool names.",
+        "steps":  [
+                      "Step 1: Validate skills/config_manager/skill.yaml exists.",
+                      "Step 2: Validate tools list includes config operations.",
+                      "Step 3: Run entry.py with sample JSON args.",
+                      "Step 4: Verify machine-readable response format."
+                  ],
+        "passes":  false
+    },
+    {
+        "category":  "functional",
+        "description":  "Skill manifest and entry for lesson_plan_generator are runnable and aligned with tool names.",
+        "steps":  [
+                      "Step 1: Validate skills/lesson_plan_generator/skill.yaml exists.",
+                      "Step 2: Validate tools list includes lesson plan and ppt operations.",
+                      "Step 3: Run entry.py with sample JSON args.",
+                      "Step 4: Verify machine-readable response format."
+                  ],
+        "passes":  false
+    },
+    {
+        "category":  "style",
+        "description":  "Teacher endpoints use typed request/response schemas instead of raw dict payloads.",
+        "steps":  [
+                      "Step 1: Add Pydantic request/response models per endpoint group.",
+                      "Step 2: Apply models in route signatures.",
+                      "Step 3: Verify OpenAPI docs show typed schemas.",
+                      "Step 4: Run tests to ensure compatibility."
+                  ],
+        "passes":  false
+    },
+    {
+        "category":  "style",
+        "description":  "Teacher API responses follow one consistent envelope schema.",
+        "steps":  [
+                      "Step 1: Define success and error envelope format.",
+                      "Step 2: Refactor teacher endpoints to use envelope.",
+                      "Step 3: Ensure error handler maps domain errors to envelope.",
+                      "Step 4: Add tests for schema consistency."
+                  ],
+        "passes":  false
+    },
+    {
+        "category":  "style",
+        "description":  "Auth dependency is consistently applied on teacher endpoints.",
+        "steps":  [
+                      "Step 1: Define auth dependency usage policy.",
+                      "Step 2: Apply dependency to all teacher endpoints.",
+                      "Step 3: Test unauthorized and authorized flows.",
+                      "Step 4: Verify no route is accidentally public."
+                  ],
+        "passes":  false
+    },
+    {
+        "category":  "functional",
+        "description":  "Teacher material lifecycle end-to-end verification passes with screenshots or API evidence.",
+        "steps":  [
+                      "Step 1: Start environment with init script.",
+                      "Step 2: Upload a material through teacher API.",
+                      "Step 3: Poll status until processing stabilizes.",
+                      "Step 4: Apply boundary adjustment.",
+                      "Step 5: Mark concept importance.",
+                      "Step 6: Query knowledge graph representation.",
+                      "Step 7: Delete material.",
+                      "Step 8: Verify post-delete behavior for each endpoint.",
+                      "Step 9: Run regression checks for unaffected records.",
+                      "Step 10: Record verification artifacts in tests or docs.",
+                      "Step 11: Update progress log with evidence links/paths."
+                  ],
+        "passes":  false
+    },
+    {
+        "category":  "functional",
+        "description":  "Teacher intervention flow end-to-end verification passes.",
+        "steps":  [
+                      "Step 1: Seed pending escalation from companion flow.",
+                      "Step 2: Fetch escalation list.",
+                      "Step 3: Fetch one escalation detail.",
+                      "Step 4: Respond as teacher.",
+                      "Step 5: Send follow-up message to student.",
+                      "Step 6: Pause companion.",
+                      "Step 7: Resume companion.",
+                      "Step 8: Query conversation history.",
+                      "Step 9: Verify queue and response consistency.",
+                      "Step 10: Run regression checks for core agent flow.",
+                      "Step 11: Record verification artifacts in tests or docs."
+                  ],
+        "passes":  false
+    },
+    {
+        "category":  "functional",
+        "description":  "Lesson plan and PPT flow end-to-end verification passes.",
+        "steps":  [
+                      "Step 1: Prepare class context and materials.",
+                      "Step 2: Generate lesson plan.",
+                      "Step 3: Read generated plan detail.",
+                      "Step 4: Edit plan and verify version update.",
+                      "Step 5: Trigger PPT generation job.",
+                      "Step 6: Poll PPT status until complete.",
+                      "Step 7: Fetch PPT preview list.",
+                      "Step 8: Fetch PPT download link.",
+                      "Step 9: Delete lesson plan and confirm behavior.",
+                      "Step 10: Validate generated_ppts and plan memory consistency.",
+                      "Step 11: Record verification artifacts in tests or docs."
+                  ],
+        "passes":  false
+    },
+    {
+        "category":  "style",
+        "description":  "Developer documentation is updated with teacher API and skill usage examples.",
+        "steps":  [
+                      "Step 1: Add endpoint table and sample payloads.",
+                      "Step 2: Add skill manifest and entry invocation examples.",
+                      "Step 3: Add local test and runbook commands.",
+                      "Step 4: Cross-check links with existing DEVELOPER_GUIDE."
+                  ],
+        "passes":  false
+    }
+]

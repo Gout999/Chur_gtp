@@ -1,0 +1,77 @@
+# EduGuide (Hackathon) - Long Task App Spec
+
+## Project Overview
+EduGuide is an Agent-Native teaching system built on LangGraph with three cooperative agents:
+- Pedagogical Architect
+- Socratic Companion
+- Curiosity Catalyst
+
+The repository already contains the core framework skeleton:
+- Graph routing and state model
+- Agent node implementations
+- Shared memory contract
+- Core tool implementations
+- Basic FastAPI service and smoke tests
+
+Current long-task focus is to complete the teacher-side productization on top of this framework.
+
+## Current Baseline (as of 2026-02-28)
+- Core framework compiles and baseline tests pass.
+- `tests/unit/test_architect.py` passes.
+- `tests/integration/test_memory.py` passes.
+- `tests/e2e/test_teaching_flow.py` passes.
+- Teacher API endpoints are still mostly placeholder responses.
+- Teacher Skills are not fully completed and not wired end-to-end.
+
+## Tech Stack
+- Backend: Python 3.11+, FastAPI
+- Agent orchestration: LangGraph
+- Memory: in-memory MVP proxy (future Redis/PostgreSQL/ChromaDB)
+- Frontend: React + TypeScript (existing `frontend/`)
+- Testing: pytest
+
+## Development Constraints
+- Follow `DEVELOPER_GUIDE.md` file ownership and collaboration contracts.
+- Do not change framework-owned files (`graph.py`, `memory/*`, `tools/base.py`) unless explicitly approved.
+- Prefer additive, testable changes in teacher-owned modules:
+  - `app/api/v1/*` (teacher-related)
+  - `tools/*` (teacher-side new modules)
+  - `skills/*` (teacher skills manifests and entrypoints)
+- Every session should complete one feature from `feature_list.json`.
+
+## Functional Goals (Teacher Side)
+1. Material Manager:
+   - Upload materials
+   - Track processing status
+   - Adjust boundary
+   - Mark importance
+   - View knowledge graph
+2. Monitor Dashboard:
+   - Class overview
+   - Student detail
+   - Student cognition
+   - Agent logs
+   - Interaction history
+3. Intervene Console:
+   - Escalation list/detail
+   - Teacher response flow
+   - Teacher-to-student messaging
+   - Companion pause/resume
+4. Config Manager:
+   - Global and class-level config
+   - Notification settings
+5. Lesson Plan Generator:
+   - Generate lesson plan
+   - Edit and persist plan
+   - Generate PPT metadata flow (MVP can mock file generation)
+
+## Non-functional Goals
+- Clear API contracts and stable response schema.
+- No regression in existing agent-node flow tests.
+- Incremental delivery with checkpointed progress logs.
+
+## Done Definition
+- Feature implemented with minimal tests.
+- Existing core tests still pass.
+- `feature_list.json` item marked `passes: true`.
+- `claude-progress.txt` updated with what changed, risks, and next item.

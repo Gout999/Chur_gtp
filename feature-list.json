@@ -1,0 +1,366 @@
+{
+    "project":  "EduGuide-hackthon-teacher",
+    "total_features":  51,
+    "completed":  25,
+    "features":  [
+                     {
+                         "id":  "F001",
+                         "name":  "Health endpoint returns service status.",
+                         "category":  "functional",
+                         "status":  "completed",
+                         "source_index":  1
+                     },
+                     {
+                         "id":  "F002",
+                         "name":  "Graph routes event types to the correct first agent node.",
+                         "category":  "functional",
+                         "status":  "completed",
+                         "source_index":  2
+                     },
+                     {
+                         "id":  "F003",
+                         "name":  "Shared memory supports write/read/read_all/update operations.",
+                         "category":  "functional",
+                         "status":  "completed",
+                         "source_index":  3
+                     },
+                     {
+                         "id":  "F004",
+                         "name":  "Pedagogical Architect node handles upload events and records authority update.",
+                         "category":  "functional",
+                         "status":  "completed",
+                         "source_index":  4
+                     },
+                     {
+                         "id":  "F005",
+                         "name":  "Socratic Companion node creates hint and updates cognition model.",
+                         "category":  "functional",
+                         "status":  "completed",
+                         "source_index":  5
+                     },
+                     {
+                         "id":  "F006",
+                         "name":  "Curiosity Catalyst node monitors resources and creates a briefing payload.",
+                         "category":  "functional",
+                         "status":  "completed",
+                         "source_index":  6
+                     },
+                     {
+                         "id":  "F007",
+                         "name":  "Baseline tests for unit/integration/e2e core flow pass in CI-like local run.",
+                         "category":  "functional",
+                         "status":  "completed",
+                         "source_index":  7
+                     },
+                     {
+                         "id":  "F008",
+                         "name":  "Teacher material upload endpoint persists upload metadata into teacher_uploads namespace.",
+                         "category":  "functional",
+                         "status":  "completed",
+                         "source_index":  8
+                     },
+                     {
+                         "id":  "F009",
+                         "name":  "Teacher material status endpoint returns parse/index status by material_id.",
+                         "category":  "functional",
+                         "status":  "completed",
+                         "source_index":  9
+                     },
+                     {
+                         "id":  "F010",
+                         "name":  "Teacher boundary adjustment endpoint records strictness updates.",
+                         "category":  "functional",
+                         "status":  "completed",
+                         "source_index":  10
+                     },
+                     {
+                         "id":  "F011",
+                         "name":  "Teacher importance marking endpoint stores concept importance signals.",
+                         "category":  "functional",
+                         "status":  "completed",
+                         "source_index":  11
+                     },
+                     {
+                         "id":  "F012",
+                         "name":  "Teacher knowledge-graph endpoint returns authority graph fragments for a material.",
+                         "category":  "functional",
+                         "status":  "completed",
+                         "source_index":  12
+                     },
+                     {
+                         "id":  "F013",
+                         "name":  "Teacher material delete endpoint removes material metadata and related marks.",
+                         "category":  "functional",
+                         "status":  "completed",
+                         "source_index":  13
+                     },
+                     {
+                         "id":  "F014",
+                         "name":  "Class overview endpoint returns aggregate stats for a class.",
+                         "category":  "functional",
+                         "status":  "completed",
+                         "source_index":  14
+                     },
+                     {
+                         "id":  "F015",
+                         "name":  "Class student list endpoint returns roster with learning indicators.",
+                         "category":  "functional",
+                         "status":  "completed",
+                         "source_index":  15
+                     },
+                     {
+                         "id":  "F016",
+                         "name":  "Student detail endpoint returns profile and current learning state.",
+                         "category":  "functional",
+                         "status":  "completed",
+                         "source_index":  16
+                     },
+                     {
+                         "id":  "F017",
+                         "name":  "Student cognition endpoint maps shared cognitive model to teacher response schema.",
+                         "category":  "functional",
+                         "status":  "completed",
+                         "source_index":  17
+                     },
+                     {
+                         "id":  "F018",
+                         "name":  "Agent logs endpoint returns decision and tool traces for a student.",
+                         "category":  "functional",
+                         "status":  "completed",
+                         "source_index":  18
+                     },
+                     {
+                         "id":  "F019",
+                         "name":  "Interaction history endpoint supports filters for date range and topic.",
+                         "category":  "functional",
+                         "status":  "completed",
+                         "source_index":  19
+                     },
+                     {
+                         "id":  "F020",
+                         "name":  "Escalation list endpoint reads pending_escalations and returns teacher queue.",
+                         "category":  "functional",
+                         "status":  "completed",
+                         "source_index":  20
+                     },
+                     {
+                         "id":  "F021",
+                         "name":  "Escalation detail endpoint returns one escalation with interaction context.",
+                         "category":  "functional",
+                         "status":  "completed",
+                         "source_index":  21
+                     },
+                     {
+                         "id":  "F022",
+                         "name":  "Escalation response endpoint stores teacher decision and clears pending item.",
+                         "category":  "functional",
+                         "status":  "completed",
+                         "source_index":  22
+                     },
+                     {
+                         "id":  "F023",
+                         "name":  "Teacher send-message endpoint writes directed messages to teacher_student_messages.",
+                         "category":  "functional",
+                         "status":  "completed",
+                         "source_index":  23
+                     },
+                     {
+                         "id":  "F024",
+                         "name":  "Conversation endpoint returns student conversation history including teacher inserts.",
+                         "category":  "functional",
+                         "status":  "completed",
+                         "source_index":  24
+                     },
+                     {
+                         "id":  "F025",
+                         "name":  "Companion pause/resume endpoint updates companion_control namespace.",
+                         "category":  "functional",
+                         "status":  "completed",
+                         "source_index":  25
+                     },
+                     {
+                         "id":  "F026",
+                         "name":  "Teacher global config GET endpoint returns defaults when no explicit config exists.",
+                         "category":  "functional",
+                         "status":  "pending",
+                         "source_index":  26
+                     },
+                     {
+                         "id":  "F027",
+                         "name":  "Teacher global config PUT endpoint validates and persists values.",
+                         "category":  "functional",
+                         "status":  "pending",
+                         "source_index":  27
+                     },
+                     {
+                         "id":  "F028",
+                         "name":  "Class-specific config GET endpoint resolves overrides over global defaults.",
+                         "category":  "functional",
+                         "status":  "pending",
+                         "source_index":  28
+                     },
+                     {
+                         "id":  "F029",
+                         "name":  "Class-specific config PUT endpoint stores override payload by class_id.",
+                         "category":  "functional",
+                         "status":  "pending",
+                         "source_index":  29
+                     },
+                     {
+                         "id":  "F030",
+                         "name":  "Notification preference endpoint updates delivery and threshold settings.",
+                         "category":  "functional",
+                         "status":  "pending",
+                         "source_index":  30
+                     },
+                     {
+                         "id":  "F031",
+                         "name":  "Lesson plan generation endpoint creates plan draft from goal and materials.",
+                         "category":  "functional",
+                         "status":  "pending",
+                         "source_index":  31
+                     },
+                     {
+                         "id":  "F032",
+                         "name":  "Lesson plan detail endpoint fetches one plan by plan_id.",
+                         "category":  "functional",
+                         "status":  "pending",
+                         "source_index":  32
+                     },
+                     {
+                         "id":  "F033",
+                         "name":  "Lesson plan update endpoint supports teacher edits and version bump.",
+                         "category":  "functional",
+                         "status":  "pending",
+                         "source_index":  33
+                     },
+                     {
+                         "id":  "F034",
+                         "name":  "Lesson plan delete endpoint archives or removes plan safely.",
+                         "category":  "functional",
+                         "status":  "pending",
+                         "source_index":  34
+                     },
+                     {
+                         "id":  "F035",
+                         "name":  "PPT generation endpoint creates generated_ppts job and output metadata.",
+                         "category":  "functional",
+                         "status":  "pending",
+                         "source_index":  35
+                     },
+                     {
+                         "id":  "F036",
+                         "name":  "PPT status endpoint supports pending/running/completed/failed states.",
+                         "category":  "functional",
+                         "status":  "pending",
+                         "source_index":  36
+                     },
+                     {
+                         "id":  "F037",
+                         "name":  "PPT download endpoint returns a stable URL or signed token.",
+                         "category":  "functional",
+                         "status":  "pending",
+                         "source_index":  37
+                     },
+                     {
+                         "id":  "F038",
+                         "name":  "PPT preview endpoint returns image list for slideshow preview.",
+                         "category":  "functional",
+                         "status":  "pending",
+                         "source_index":  38
+                     },
+                     {
+                         "id":  "F039",
+                         "name":  "Lesson template listing endpoint returns available template metadata.",
+                         "category":  "functional",
+                         "status":  "pending",
+                         "source_index":  39
+                     },
+                     {
+                         "id":  "F040",
+                         "name":  "Skill manifest and entry for material_manager are runnable and aligned with tool names.",
+                         "category":  "functional",
+                         "status":  "pending",
+                         "source_index":  40
+                     },
+                     {
+                         "id":  "F041",
+                         "name":  "Skill manifest and entry for monitor_dashboard are runnable and aligned with tool names.",
+                         "category":  "functional",
+                         "status":  "pending",
+                         "source_index":  41
+                     },
+                     {
+                         "id":  "F042",
+                         "name":  "Skill manifest and entry for intervene_console are runnable and aligned with tool names.",
+                         "category":  "functional",
+                         "status":  "pending",
+                         "source_index":  42
+                     },
+                     {
+                         "id":  "F043",
+                         "name":  "Skill manifest and entry for config_manager are runnable and aligned with tool names.",
+                         "category":  "functional",
+                         "status":  "pending",
+                         "source_index":  43
+                     },
+                     {
+                         "id":  "F044",
+                         "name":  "Skill manifest and entry for lesson_plan_generator are runnable and aligned with tool names.",
+                         "category":  "functional",
+                         "status":  "pending",
+                         "source_index":  44
+                     },
+                     {
+                         "id":  "F045",
+                         "name":  "Teacher endpoints use typed request/response schemas instead of raw dict payloads.",
+                         "category":  "style",
+                         "status":  "pending",
+                         "source_index":  45
+                     },
+                     {
+                         "id":  "F046",
+                         "name":  "Teacher API responses follow one consistent envelope schema.",
+                         "category":  "style",
+                         "status":  "pending",
+                         "source_index":  46
+                     },
+                     {
+                         "id":  "F047",
+                         "name":  "Auth dependency is consistently applied on teacher endpoints.",
+                         "category":  "style",
+                         "status":  "pending",
+                         "source_index":  47
+                     },
+                     {
+                         "id":  "F048",
+                         "name":  "Teacher material lifecycle end-to-end verification passes with screenshots or API evidence.",
+                         "category":  "functional",
+                         "status":  "pending",
+                         "source_index":  48
+                     },
+                     {
+                         "id":  "F049",
+                         "name":  "Teacher intervention flow end-to-end verification passes.",
+                         "category":  "functional",
+                         "status":  "pending",
+                         "source_index":  49
+                     },
+                     {
+                         "id":  "F050",
+                         "name":  "Lesson plan and PPT flow end-to-end verification passes.",
+                         "category":  "functional",
+                         "status":  "pending",
+                         "source_index":  50
+                     },
+                     {
+                         "id":  "F051",
+                         "name":  "Developer documentation is updated with teacher API and skill usage examples.",
+                         "category":  "style",
+                         "status":  "pending",
+                         "source_index":  51
+                     }
+                 ],
+    "created_at":  "2026-02-28T15:45:08.1760681+08:00",
+    "updated_at":  "2026-02-28T15:45:08.1811632+08:00"
+}

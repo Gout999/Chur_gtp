@@ -1,0 +1,116 @@
+# Long Task Progress Log
+
+## Project Info
+- Project: EduGuide (hackthon teacher branch)
+- Start Date: 2026-02-28
+- Current Session: 4 (Coding Agent)
+
+## Completed
+
+### Session 1 (2026-02-28) - Initializer
+- Created `app_spec.txt` aligned with current codebase status and PRD scope.
+- Created `feature_list.json` with 51 prioritized items:
+  - 7 baseline items marked done (`passes: true`) based on current validated framework state.
+  - 44 teacher-side items pending (`passes: false`).
+- Created `init.sh` for reproducible environment bootstrap and baseline test run.
+- Created this `claude-progress.txt` for cross-session handoff.
+
+### Session 2 (2026-02-28) - Coding Agent
+- Completed one feature:
+  - `Teacher material upload endpoint persists upload metadata into teacher_uploads namespace.`
+- Implemented `POST /api/v1/teacher/materials/upload` with typed request/response schema.
+- Endpoint now writes uploaded material metadata into `teacher_uploads` using `material_id` key.
+- Added integration test:
+  - `tests/integration/test_teacher_material_upload.py`
+- Regression run result:
+  - `4 passed` across new upload integration + baseline architect/memory/e2e tests.
+- Updated status files:
+  - `feature_list.json`: flipped exactly one `passes` from `false` to `true`.
+  - `feature-list.json`: regenerated for installed skill runtime compatibility.
+
+### Session 3 (2026-02-28) - Coding Agent
+- Completed five features:
+  - `Teacher material status endpoint returns parse/index status by material_id.`
+  - `Teacher boundary adjustment endpoint records strictness updates.`
+  - `Teacher importance marking endpoint stores concept importance signals.`
+  - `Teacher knowledge-graph endpoint returns authority graph fragments for a material.`
+  - `Teacher material delete endpoint removes material metadata and related marks.`
+- Added typed endpoints under `app/api/v1/teacher.py`:
+  - `GET /api/v1/teacher/materials/{material_id}/status`
+  - `PUT /api/v1/teacher/materials/{material_id}/boundary`
+  - `PUT /api/v1/teacher/materials/{material_id}/importance`
+  - `GET /api/v1/teacher/materials/{material_id}/knowledge-graph`
+  - `DELETE /api/v1/teacher/materials/{material_id}`
+- Added/expanded integration coverage in:
+  - `tests/integration/test_teacher_material_upload.py`
+- Regression run result:
+  - `9 passed` across teacher materials integration + baseline architect/memory/e2e tests.
+- Updated status files:
+  - `feature_list.json`: flipped five `passes` fields from `false` to `true`.
+  - `feature-list.json`: regenerated for installed skill runtime compatibility.
+
+### Session 4 (2026-02-28) - Coding Agent
+- Completed twelve features:
+  - `Class overview endpoint returns aggregate stats for a class.`
+  - `Class student list endpoint returns roster with learning indicators.`
+  - `Student detail endpoint returns profile and current learning state.`
+  - `Student cognition endpoint maps shared cognitive model to teacher response schema.`
+  - `Agent logs endpoint returns decision and tool traces for a student.`
+  - `Interaction history endpoint supports filters for date range and topic.`
+  - `Escalation list endpoint reads pending_escalations and returns teacher queue.`
+  - `Escalation detail endpoint returns one escalation with interaction context.`
+  - `Escalation response endpoint stores teacher decision and clears pending item.`
+  - `Teacher send-message endpoint writes directed messages to teacher_student_messages.`
+  - `Conversation endpoint returns student conversation history including teacher inserts.`
+  - `Companion pause/resume endpoint updates companion_control namespace.`
+- Added typed monitoring/intervention endpoints in `app/api/v1/teacher.py`.
+- Added integration coverage:
+  - `tests/integration/test_teacher_monitor_endpoints.py`
+  - `tests/integration/test_teacher_intervene_endpoints.py`
+- Regression run result:
+  - `18 passed` across teacher integration suites + baseline architect/memory/e2e tests.
+- Updated status files:
+  - `feature_list.json`: flipped twelve `passes` fields from `false` to `true`.
+  - `feature-list.json`: regenerated for installed skill runtime compatibility.
+
+## Metrics
+- Total features: 51
+- Completed: 25
+- In progress: 0
+- Todo: 26
+- Progress: 49%
+
+## Session Handoff
+
+### Current State
+- Branch: teacher
+- Last commit: cecfcee4 - docs: interest_signals ownership clarification
+- Latest test run: `18 passed` (teacher materials/monitor/intervene integration + architect unit + memory integration + teaching flow e2e smoke)
+- Long-task state files now exist: yes
+
+### Risks / Gaps
+- Teacher API endpoints are mostly placeholders and need concrete schemas + memory writes.
+- Skill package docs and skill entry implementation are inconsistent about
+  `feature_list.json` vs `feature-list.json`.
+- Some teacher-related namespaces referenced in planning docs are not yet part of
+  `memory/shared.py` (needs owner coordination per DEVELOPER_GUIDE).
+
+### Recommended Next Session (Coding Agent)
+1. Pick the highest-priority pending feature:
+   `Teacher global config GET endpoint returns defaults when no explicit config exists.`
+2. Implement config endpoints end-to-end (GET/PUT global + class override + notifications + tests).
+3. Run baseline regression tests.
+4. Flip exactly one `passes` field to true.
+5. Update this progress file with evidence and next action.
+
+### Command Notes
+```bash
+# bootstrap environment
+./init.sh
+
+# run baseline regressions
+pytest -q tests/unit/test_architect.py tests/integration/test_memory.py tests/e2e/test_teaching_flow.py
+
+# count pending items
+grep '\"passes\": false' feature_list.json | wc -l
+```
