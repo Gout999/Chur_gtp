@@ -34,6 +34,7 @@ class Settings:
     log_level: str
     secret_key: str
     github_token: str
+    exa_api_key: str
     project_root: Path
 
 
@@ -50,6 +51,7 @@ SETTINGS = Settings(
     log_level=_ENV.get("LOG_LEVEL", "INFO"),
     secret_key=_ENV.get("SECRET_KEY", "change-me"),
     github_token=_ENV.get("GITHUB_TOKEN", ""),
+    exa_api_key=_ENV.get("EXA_API_KEY", ""),
     project_root=PROJECT_ROOT,
 )
 
@@ -66,3 +68,4 @@ APP_ENV = SETTINGS.app_env
 LOG_LEVEL = SETTINGS.log_level
 SECRET_KEY = SETTINGS.secret_key
 GITHUB_TOKEN = SETTINGS.github_token
+EXA_API_KEY = SETTINGS.exa_api_key
