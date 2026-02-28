@@ -303,7 +303,7 @@
                       "Step 3: Verify default config schema is returned.",
                       "Step 4: Verify enum fields are valid."
                   ],
-        "passes":  false
+        "passes":  true
     },
     {
         "category":  "functional",
@@ -315,7 +315,7 @@
                       "Step 4: Persist into teacher_configurations.",
                       "Step 5: Verify GET reflects updated values."
                   ],
-        "passes":  false
+        "passes":  true
     },
     {
         "category":  "functional",
@@ -326,7 +326,7 @@
                       "Step 3: Verify merged config result.",
                       "Step 4: Verify fallback when class override missing."
                   ],
-        "passes":  false
+        "passes":  true
     },
     {
         "category":  "functional",
@@ -338,7 +338,7 @@
                       "Step 4: Persist class override and timestamp.",
                       "Step 5: Confirm GET returns the override."
                   ],
-        "passes":  false
+        "passes":  true
     },
     {
         "category":  "functional",
@@ -349,7 +349,7 @@
                       "Step 3: Validate delivery channels.",
                       "Step 4: Persist and verify round-trip via GET config."
                   ],
-        "passes":  false
+        "passes":  true
     },
     {
         "category":  "functional",

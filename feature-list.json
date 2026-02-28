@@ -1,7 +1,7 @@
 {
     "project":  "EduGuide-hackthon-teacher",
     "total_features":  51,
-    "completed":  25,
+    "completed":  30,
     "features":  [
                      {
                          "id":  "F001",
@@ -182,35 +182,35 @@
                          "id":  "F026",
                          "name":  "Teacher global config GET endpoint returns defaults when no explicit config exists.",
                          "category":  "functional",
-                         "status":  "pending",
+                         "status":  "completed",
                          "source_index":  26
                      },
                      {
                          "id":  "F027",
                          "name":  "Teacher global config PUT endpoint validates and persists values.",
                          "category":  "functional",
-                         "status":  "pending",
+                         "status":  "completed",
                          "source_index":  27
                      },
                      {
                          "id":  "F028",
                          "name":  "Class-specific config GET endpoint resolves overrides over global defaults.",
                          "category":  "functional",
-                         "status":  "pending",
+                         "status":  "completed",
                          "source_index":  28
                      },
                      {
                          "id":  "F029",
                          "name":  "Class-specific config PUT endpoint stores override payload by class_id.",
                          "category":  "functional",
-                         "status":  "pending",
+                         "status":  "completed",
                          "source_index":  29
                      },
                      {
                          "id":  "F030",
                          "name":  "Notification preference endpoint updates delivery and threshold settings.",
                          "category":  "functional",
-                         "status":  "pending",
+                         "status":  "completed",
                          "source_index":  30
                      },
                      {
@@ -361,6 +361,6 @@
                          "source_index":  51
                      }
                  ],
-    "created_at":  "2026-02-28T15:45:08.1760681+08:00",
-    "updated_at":  "2026-02-28T15:45:08.1811632+08:00"
+    "created_at":  "2026-02-28T15:47:35.4427855+08:00",
+    "updated_at":  "2026-02-28T15:47:35.4458091+08:00"
 }

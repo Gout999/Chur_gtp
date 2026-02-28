@@ -225,6 +225,41 @@ class CompanionPauseResponse(BaseModel):
     updated_at: str
 
 
+class TeacherConfigModel(BaseModel):
+    companion_strictness: Literal["gentle", "moderate", "strict"] = "moderate"
+    companion_max_attempts: int = Field(default=5, ge=1, le=20)
+    companion_emotion_detection: bool = True
+    catalyst_enabled: bool = True
+    catalyst_push_frequency: Literal["daily", "weekly"] = "daily"
+    catalyst_max_daily_push: int = Field(default=3, ge=0, le=20)
+    catalyst_content_review: bool = True
+    architect_default_boundary: Literal["strict", "moderate", "permissive"] = "moderate"
+    architect_auto_expand: bool = False
+    notification_escalation_threshold: Literal["high", "medium", "any"] = "medium"
+    notification_delivery: List[Literal["in_app", "email", "push"]] = Field(default_factory=lambda: ["in_app"])
+
+
+class TeacherConfigResponse(BaseModel):
+    teacher_id: str
+    config: TeacherConfigModel
+
+
+class TeacherConfigUpdateRequest(BaseModel):
+    teacher_id: str = Field(min_length=1)
+    config: TeacherConfigModel
+
+
+class TeacherClassConfigUpdateRequest(BaseModel):
+    teacher_id: str = Field(min_length=1)
+    config: TeacherConfigModel
+
+
+class TeacherNotificationConfigRequest(BaseModel):
+    teacher_id: str = Field(min_length=1)
+    notification_escalation_threshold: Literal["high", "medium", "any"]
+    notification_delivery: List[Literal["in_app", "email", "push"]] = Field(min_length=1)
+
+
 def _get_active_material_or_404(material_id: str) -> Dict[str, str]:
     entry = shared_memory.read("teacher_uploads", material_id)
     if not entry:
@@ -672,3 +707,108 @@ def update_companion_pause(payload: CompanionPauseRequest) -> CompanionPauseResp
         },
     )
     return CompanionPauseResponse(paused=payload.paused, scope=payload.scope, updated_at=now)
+
+
+def _global_config_key(teacher_id: str) -> str:
+    return f"global:{teacher_id}"
+
+
+def _class_config_key(teacher_id: str, class_id: str) -> str:
+    return f"class:{teacher_id}:{class_id}"
+
+
+def _default_config() -> TeacherConfigModel:
+    return TeacherConfigModel()
+
+
+@router.get("/config", response_model=TeacherConfigResponse)
+def get_teacher_config(teacher_id: str = Query(default="teacher-demo")) -> TeacherConfigResponse:
+    entry = shared_memory.read("teacher_configurations", _global_config_key(teacher_id))
+    if not entry:
+        return TeacherConfigResponse(teacher_id=teacher_id, config=_default_config())
+    return TeacherConfigResponse(
+        teacher_id=teacher_id,
+        config=TeacherConfigModel.model_validate(entry.get("value", {}).get("config", {})),
+    )
+
+
+@router.put("/config", response_model=TeacherConfigResponse)
+def update_teacher_config(payload: TeacherConfigUpdateRequest) -> TeacherConfigResponse:
+    now = _utc_iso()
+    shared_memory.write(
+        "teacher_configurations",
+        _global_config_key(payload.teacher_id),
+        {
+            "teacher_id": payload.teacher_id,
+            "scope": "global",
+            "config": payload.config.model_dump(),
+            "updated_at": now,
+        },
+    )
+    return TeacherConfigResponse(teacher_id=payload.teacher_id, config=payload.config)
+
+
+@router.get("/classes/{class_id}/config", response_model=TeacherConfigResponse)
+def get_teacher_class_config(
+    class_id: str,
+    teacher_id: str = Query(default="teacher-demo"),
+) -> TeacherConfigResponse:
+    global_entry = shared_memory.read("teacher_configurations", _global_config_key(teacher_id))
+    class_entry = shared_memory.read("teacher_configurations", _class_config_key(teacher_id, class_id))
+
+    base = _default_config().model_dump()
+    if global_entry:
+        base.update(global_entry.get("value", {}).get("config", {}))
+    if class_entry:
+        base.update(class_entry.get("value", {}).get("config", {}))
+
+    return TeacherConfigResponse(
+        teacher_id=teacher_id,
+        config=TeacherConfigModel.model_validate(base),
+    )
+
+
+@router.put("/classes/{class_id}/config", response_model=TeacherConfigResponse)
+def update_teacher_class_config(
+    class_id: str,
+    payload: TeacherClassConfigUpdateRequest,
+) -> TeacherConfigResponse:
+    now = _utc_iso()
+    shared_memory.write(
+        "teacher_configurations",
+        _class_config_key(payload.teacher_id, class_id),
+        {
+            "teacher_id": payload.teacher_id,
+            "scope": "class",
+            "class_id": class_id,
+            "config": payload.config.model_dump(),
+            "updated_at": now,
+        },
+    )
+    return TeacherConfigResponse(teacher_id=payload.teacher_id, config=payload.config)
+
+
+@router.put("/config/notifications", response_model=TeacherConfigResponse)
+def update_teacher_notification_config(
+    payload: TeacherNotificationConfigRequest,
+) -> TeacherConfigResponse:
+    existing = shared_memory.read("teacher_configurations", _global_config_key(payload.teacher_id))
+    merged = _default_config().model_dump()
+    if existing:
+        merged.update(existing.get("value", {}).get("config", {}))
+
+    merged["notification_escalation_threshold"] = payload.notification_escalation_threshold
+    merged["notification_delivery"] = payload.notification_delivery
+
+    config = TeacherConfigModel.model_validate(merged)
+    shared_memory.write(
+        "teacher_configurations",
+        _global_config_key(payload.teacher_id),
+        {
+            "teacher_id": payload.teacher_id,
+            "scope": "global",
+            "config": config.model_dump(),
+            "updated_at": _utc_iso(),
+        },
+    )
+    return TeacherConfigResponse(teacher_id=payload.teacher_id, config=config)

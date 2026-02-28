@@ -3,7 +3,7 @@
 ## Project Info
 - Project: EduGuide (hackthon teacher branch)
 - Start Date: 2026-02-28
-- Current Session: 4 (Coding Agent)
+- Current Session: 5 (Coding Agent)
 
 ## Completed
 
@@ -73,19 +73,40 @@
   - `feature_list.json`: flipped twelve `passes` fields from `false` to `true`.
   - `feature-list.json`: regenerated for installed skill runtime compatibility.
 
+### Session 5 (2026-02-28) - Coding Agent
+- Completed five features:
+  - `Teacher global config GET endpoint returns defaults when no explicit config exists.`
+  - `Teacher global config PUT endpoint validates and persists values.`
+  - `Class-specific config GET endpoint resolves overrides over global defaults.`
+  - `Class-specific config PUT endpoint stores override payload by class_id.`
+  - `Notification preference endpoint updates delivery and threshold settings.`
+- Added typed config endpoints in `app/api/v1/teacher.py`:
+  - `GET /api/v1/teacher/config`
+  - `PUT /api/v1/teacher/config`
+  - `GET /api/v1/teacher/classes/{class_id}/config`
+  - `PUT /api/v1/teacher/classes/{class_id}/config`
+  - `PUT /api/v1/teacher/config/notifications`
+- Added integration coverage:
+  - `tests/integration/test_teacher_config_endpoints.py`
+- Regression run result:
+  - `22 passed` across teacher integration suites + baseline architect/memory/e2e tests.
+- Updated status files:
+  - `feature_list.json`: flipped five `passes` fields from `false` to `true`.
+  - `feature-list.json`: regenerated for installed skill runtime compatibility.
+
 ## Metrics
 - Total features: 51
-- Completed: 25
+- Completed: 30
 - In progress: 0
-- Todo: 26
-- Progress: 49%
+- Todo: 21
+- Progress: 59%
 
 ## Session Handoff
 
 ### Current State
 - Branch: teacher
-- Last commit: cecfcee4 - docs: interest_signals ownership clarification
-- Latest test run: `18 passed` (teacher materials/monitor/intervene integration + architect unit + memory integration + teaching flow e2e smoke)
+- Last commit: 3373fbd5 - feat(teacher): complete materials monitoring and intervene APIs with tests; update long-task state
+- Latest test run: `22 passed` (teacher materials/monitor/intervene/config integration + architect unit + memory integration + teaching flow e2e smoke)
 - Long-task state files now exist: yes
 
 ### Risks / Gaps
@@ -97,8 +118,8 @@
 
 ### Recommended Next Session (Coding Agent)
 1. Pick the highest-priority pending feature:
-   `Teacher global config GET endpoint returns defaults when no explicit config exists.`
-2. Implement config endpoints end-to-end (GET/PUT global + class override + notifications + tests).
+   `Lesson plan generation endpoint creates plan draft from goal and materials.`
+2. Implement lesson plan + ppt endpoints with in-memory metadata flow and tests.
 3. Run baseline regression tests.
 4. Flip exactly one `passes` field to true.
 5. Update this progress file with evidence and next action.
