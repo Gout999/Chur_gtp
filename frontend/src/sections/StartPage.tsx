@@ -37,7 +37,29 @@ const SPAWN_Z = -3000
 const RESET_Z = 500
 const DEFAULT_SPEED = 150
 
-type TransitionPhase = 'idle' | 'zooming' | 'showName' | 'circleExpand' | 'complete'
+// Dashboard images to preload during transition
+const STUDENT_DASHBOARD_IMAGES = [
+  '/images/revision-bg.jpg',
+  '/images/homework-bg.jpg',
+  '/images/mistakes-bg.jpg',
+]
+
+const TEACHER_DASHBOARD_IMAGES = [
+  '/images/revision-bg.jpg',
+  '/images/homework-bg.jpg',
+  '/images/teacher-analytics-bg.jpg',
+]
+
+// Preload images in background
+const preloadImages = (images: string[]) => {
+  images.forEach(src => {
+    const img = new Image()
+    img.src = src
+    // No need to wait, just start loading in background
+  })
+}
+
+type TransitionPhase = 'idle' | 'zooming' | 'showName' | 'complete'
 
 interface StartPageProps {
   onPageChange: (page: PageType) => void;
@@ -49,9 +71,8 @@ export default function StartPage({ onPageChange }: StartPageProps) {
   const [transitionPhase, setTransitionPhase] = useState<TransitionPhase>('idle')
   const [cameraZ, setCameraZ] = useState(0)
   const [whiteOpacity, setWhiteOpacity] = useState(0)
-  const [circleScale, setCircleScale] = useState(0)
   const [nameOpacity, setNameOpacity] = useState(0)
-  const [startPageOpacity, setStartPageOpacity] = useState(1)
+  const [startPageOpacity] = useState(1)
   
   const containerRef = useRef<HTMLDivElement>(null)
   const animationFrameRef = useRef<number | null>(null)
@@ -76,7 +97,7 @@ export default function StartPage({ onPageChange }: StartPageProps) {
         z: initialZ,
         baseX: Math.cos(angle) * radius,
         baseY: Math.sin(angle) * radius * 0.6,
-        size: 110 + Math.random() * 88,  // Increased 10%
+        size: 110 + Math.random() * 88,
         rotation: Math.random() * 360,
         rotationSpeed: (Math.random() - 0.5) * 0.2,
         speed: DEFAULT_SPEED + Math.random() * 50,
@@ -112,6 +133,10 @@ export default function StartPage({ onPageChange }: StartPageProps) {
     if (transitionPhase !== 'idle') return
     hasCalledPageChange.current = false
     transitionTargetRef.current = 'dashboard'
+    
+    // Start preloading dashboard images immediately when transition begins
+    preloadImages(STUDENT_DASHBOARD_IMAGES)
+    
     setTransitionPhase('zooming')
     transitionStartTime.current = performance.now()
   }, [transitionPhase])
@@ -120,6 +145,10 @@ export default function StartPage({ onPageChange }: StartPageProps) {
     if (transitionPhase !== 'idle') return
     hasCalledPageChange.current = false
     transitionTargetRef.current = 'teacher-dashboard'
+    
+    // Start preloading teacher dashboard images immediately when transition begins
+    preloadImages(TEACHER_DASHBOARD_IMAGES)
+    
     setTransitionPhase('zooming')
     transitionStartTime.current = performance.now()
   }, [transitionPhase])
@@ -163,28 +192,8 @@ export default function StartPage({ onPageChange }: StartPageProps) {
         }
         
         if (elapsed > 2000) {
-          setTransitionPhase('circleExpand')
-          transitionStartTime.current = time
-        }
-      } else if (transitionPhase === 'circleExpand') {
-        const elapsed = time - (transitionStartTime.current || time)
-        const progress = Math.min(elapsed / 3500, 1) // 3.5 seconds for slower animation
-        
-        setCircleScale(easeOutCubic(progress) * 150)
-        
-        // Early call to load dashboard at 60% progress
-        if (progress >= 0.6 && !hasCalledPageChange.current) {
-          hasCalledPageChange.current = true
+          // Direct transition to dashboard without circleExpand
           onPageChange(transitionTargetRef.current)
-        }
-        
-        // Fade out StartPage at 80% progress
-        if (progress >= 0.8) {
-          const fadeProgress = (progress - 0.8) / 0.2
-          setStartPageOpacity(1 - fadeProgress)
-        }
-        
-        if (progress >= 1) {
           setTransitionPhase('complete')
         }
       }
@@ -232,10 +241,6 @@ export default function StartPage({ onPageChange }: StartPageProps) {
 
   const easeInOutCubic = (t: number) => {
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
-  }
-  
-  const easeOutCubic = (t: number) => {
-    return 1 - Math.pow(1 - t, 3)
   }
 
   const getObjectStyle = (obj: FloatingObject) => {
@@ -291,8 +296,6 @@ export default function StartPage({ onPageChange }: StartPageProps) {
       style={{ 
         opacity: startPageOpacity,
         transition: 'opacity 0.3s ease-out',
-        maskImage: transitionPhase === 'circleExpand' ? `radial-gradient(circle at center, transparent 0%, transparent ${circleScale}vmax, black ${circleScale + 0.1}vmax, black 100%)` : undefined,
-        WebkitMaskImage: transitionPhase === 'circleExpand' ? `radial-gradient(circle at center, transparent 0%, transparent ${circleScale}vmax, black ${circleScale + 0.1}vmax, black 100%)` : undefined,
       }}
     >
       <div className="scene-container">
@@ -338,14 +341,14 @@ export default function StartPage({ onPageChange }: StartPageProps) {
             onClick={teacherTransition}
           >
             <Layers size={18} />
-            <span>老師</span>
+            <span>Teacher</span>
           </button>
           <button 
             className="control-btn student-btn"
             onClick={studentTransition}
           >
             <Grid3X3 size={18} />
-            <span>學生</span>
+            <span>Student</span>
           </button>
         </div>
       )}
@@ -355,13 +358,13 @@ export default function StartPage({ onPageChange }: StartPageProps) {
         style={{ opacity: whiteOpacity }}
       />
 
-      {(transitionPhase === 'showName' || transitionPhase === 'circleExpand') && (
+      {transitionPhase === 'showName' && (
         <div 
           className="name-display"
           style={{ opacity: nameOpacity }}
         >
           <h1>chur-gpt</h1>
-          <p>學生學習平台</p>
+          <p>Student Learning Platform</p>
         </div>
       )}
     </div>

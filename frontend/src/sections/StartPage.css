@@ -284,24 +284,23 @@
 }
 
 .name-display h1 {
-  font-size: 72px;
-  font-weight: 800;
-  letter-spacing: -2px;
-  margin-bottom: 20px;
-  /* Soft muted blue-gray gradient */
-  background: linear-gradient(135deg, #8b9dc3 0%, #a8b8d8 50%, #c5d1e8 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-size: 64px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  margin-bottom: 16px;
+  color: #1f2937;
+  -webkit-background-clip: unset;
+  -webkit-text-fill-color: unset;
+  background-clip: unset;
   text-shadow: none;
 }
 
 .name-display p {
-  font-size: 22px;
-  font-weight: 400;
-  /* Soft gray */
-  color: #9ca3af;
-  letter-spacing: 6px;
+  font-size: 18px;
+  font-weight: 300;
+  color: #6b7280;
+  letter-spacing: 0;
+  margin-top: 16px;
 }
 
 /* Expanding Circle - White/Smooth gray */
@@ -340,13 +339,15 @@
 
   .name-display h1 {
     font-size: 48px;
+    letter-spacing: 0.1em;
   }
 
   .name-display p {
     font-size: 16px;
-    letter-spacing: 4px;
+    letter-spacing: 0;
   }
 }
+
 
 /* Animation for entrance */
 @keyframes fadeIn {
