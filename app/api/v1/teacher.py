@@ -3,12 +3,13 @@ from datetime import datetime, timezone
 from typing import Dict, List, Literal, Optional
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
+from app.core.auth import require_bearer_token
 from memory.shared import shared_memory
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_bearer_token)])
 
 
 @router.get("/profile")

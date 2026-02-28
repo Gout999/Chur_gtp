@@ -3,6 +3,14 @@ from fastapi.testclient import TestClient
 from app.main import app
 from memory.shared import shared_memory
 
+AUTH_HEADERS = {"Authorization": "Bearer test-token"}
+
+
+def _data(response):
+    body = response.json()
+    assert body["success"] is True
+    return body["data"]
+
 
 def _seed_escalation(escalation_id: str = "esc-100") -> str:
     shared_memory.write(
@@ -24,14 +32,14 @@ def test_escalation_list_and_detail() -> None:
     escalation_id = _seed_escalation("esc-101")
     client = TestClient(app)
 
-    list_resp = client.get("/api/v1/teacher/escalations")
+    list_resp = client.get("/api/v1/teacher/escalations", headers=AUTH_HEADERS)
     assert list_resp.status_code == 200
-    ids = [item["escalation_id"] for item in list_resp.json()["escalations"]]
+    ids = [item["escalation_id"] for item in _data(list_resp)["escalations"]]
     assert escalation_id in ids
 
-    detail_resp = client.get(f"/api/v1/teacher/escalations/{escalation_id}")
+    detail_resp = client.get(f"/api/v1/teacher/escalations/{escalation_id}", headers=AUTH_HEADERS)
     assert detail_resp.status_code == 200
-    detail = detail_resp.json()
+    detail = _data(detail_resp)
     assert detail["escalation_id"] == escalation_id
     assert detail["detail"]["student_id"] == "stu-z"
 
@@ -47,9 +55,10 @@ def test_escalation_response_marks_pending_resolved() -> None:
             "action": "resolve",
             "message": "Give the student a worked example first.",
         },
+        headers=AUTH_HEADERS,
     )
     assert response.status_code == 200
-    body = response.json()
+    body = _data(response)
     assert body["escalation_id"] == escalation_id
     assert body["resolved"] is True
 
@@ -72,15 +81,16 @@ def test_send_message_and_conversation() -> None:
             "content": "Please retry step 2 with the formula hint.",
             "channel": "in_app",
         },
+        headers=AUTH_HEADERS,
     )
     assert send.status_code == 200
-    payload = send.json()
+    payload = _data(send)
     assert payload["message_id"].startswith("msg_")
     assert payload["delivery_state"] == "queued"
 
-    convo = client.get("/api/v1/teacher/messages/conversations/stu-z")
+    convo = client.get("/api/v1/teacher/messages/conversations/stu-z", headers=AUTH_HEADERS)
     assert convo.status_code == 200
-    convo_data = convo.json()
+    convo_data = _data(convo)
     assert convo_data["student_id"] == "stu-z"
     assert convo_data["total"] >= 1
     assert any(item["content"].startswith("Please retry") for item in convo_data["items"])
@@ -92,16 +102,18 @@ def test_companion_pause_and_resume() -> None:
     pause_resp = client.put(
         "/api/v1/teacher/companion/pause",
         json={"paused": True, "reason": "maintenance", "scope": "global"},
+        headers=AUTH_HEADERS,
     )
     assert pause_resp.status_code == 200
-    assert pause_resp.json()["paused"] is True
+    assert _data(pause_resp)["paused"] is True
 
     resume_resp = client.put(
         "/api/v1/teacher/companion/pause",
         json={"paused": False, "reason": "ready", "scope": "global"},
+        headers=AUTH_HEADERS,
     )
     assert resume_resp.status_code == 200
-    assert resume_resp.json()["paused"] is False
+    assert _data(resume_resp)["paused"] is False
 
     state = shared_memory.read("companion_control", "global")
     assert state is not None

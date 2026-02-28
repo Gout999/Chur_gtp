@@ -3,7 +3,7 @@
 ## Project Info
 - Project: EduGuide (hackthon teacher branch)
 - Start Date: 2026-02-28
-- Current Session: 7 (Coding Agent)
+- Current Session: 8 (Coding Agent)
 
 ## Completed
 
@@ -133,19 +133,42 @@
   - `feature_list.json`: flipped five `passes` fields from `false` to `true`.
   - `feature-list.json`: regenerated for installed skill runtime compatibility.
 
+### Session 8 (2026-02-28) - Coding Agent
+- Completed seven features:
+  - `Teacher endpoints use typed request/response schemas instead of raw dict payloads.`
+  - `Teacher API responses follow one consistent envelope schema.`
+  - `Auth dependency is consistently applied on teacher endpoints.`
+  - `Teacher material lifecycle end-to-end verification passes with screenshots or API evidence.`
+  - `Teacher intervention flow end-to-end verification passes.`
+  - `Lesson plan and PPT flow end-to-end verification passes.`
+  - `Developer documentation is updated with teacher API and skill usage examples.`
+- Added teacher API envelope middleware in `app/main.py`.
+- Applied auth dependency to all teacher endpoints in `app/api/v1/teacher.py`.
+- Updated all teacher integration tests for auth + envelope.
+- Added final validation coverage:
+  - `tests/integration/test_teacher_auth_envelope.py`
+  - `tests/e2e/test_teacher_workflows.py`
+- Added documentation:
+  - `docs/TEACHER_API_SKILLS_GUIDE.md`
+- Regression run result:
+  - `31 passed` across teacher integration/e2e suites + baseline architect/memory/e2e tests.
+- Updated status files:
+  - `feature_list.json`: flipped final seven `passes` fields to `true`.
+  - `feature-list.json`: regenerated for installed skill runtime compatibility.
+
 ## Metrics
 - Total features: 51
-- Completed: 44
+- Completed: 51
 - In progress: 0
-- Todo: 7
-- Progress: 86%
+- Todo: 0
+- Progress: 100%
 
 ## Session Handoff
 
 ### Current State
 - Branch: teacher
-- Last commit: 0c5194f2 - feat(teacher): add lesson plan and ppt APIs with integration tests; update long-task progress
-- Latest test run: `26 passed` (teacher materials/monitor/intervene/config/lesson/skills integration + architect unit + memory integration + teaching flow e2e smoke)
+- Last commit: 19ff7439 - feat(skills): complete teacher skill manifests/entries and add runnable scaffold tests
+- Latest test run: `31 passed` (teacher integration/e2e + baseline architect/memory/e2e tests)
 - Long-task state files now exist: yes
 
 ### Risks / Gaps
@@ -156,12 +179,9 @@
   `memory/shared.py` (needs owner coordination per DEVELOPER_GUIDE).
 
 ### Recommended Next Session (Coding Agent)
-1. Pick the highest-priority pending feature:
-   `Teacher API responses follow one consistent envelope schema.`
-2. Apply response envelope + teacher auth dependency and update all integration tests accordingly.
-3. Run baseline regression tests.
-4. Flip exactly one `passes` field to true.
-5. Update this progress file with evidence and next action.
+1. Optional: split large teacher router into module files (`teacher_materials.py`, `teacher_monitor.py`, etc.) for maintainability.
+2. Optional: replace in-memory stores with real persistence adapter and keep API contract unchanged.
+3. Optional: add CI job to run full integration/e2e teacher suite on every PR.
 
 ### Command Notes
 ```bash

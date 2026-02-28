@@ -3,6 +3,14 @@ from fastapi.testclient import TestClient
 from app.main import app
 from memory.shared import shared_memory
 
+AUTH_HEADERS = {"Authorization": "Bearer test-token"}
+
+
+def _data(response):
+    body = response.json()
+    assert body["success"] is True
+    return body["data"]
+
 
 def _seed_monitor_data() -> None:
     shared_memory.write(
@@ -91,9 +99,9 @@ def test_class_overview_returns_aggregate_stats() -> None:
     _seed_monitor_data()
     client = TestClient(app)
 
-    response = client.get("/api/v1/teacher/classes/class-1/overview")
+    response = client.get("/api/v1/teacher/classes/class-1/overview", headers=AUTH_HEADERS)
     assert response.status_code == 200
-    data = response.json()
+    data = _data(response)
     assert data["class_id"] == "class-1"
     assert data["total_students"] >= 2
     assert data["total_interactions"] >= 3
@@ -105,9 +113,9 @@ def test_class_students_returns_sorted_roster() -> None:
     _seed_monitor_data()
     client = TestClient(app)
 
-    response = client.get("/api/v1/teacher/classes/class-1/students")
+    response = client.get("/api/v1/teacher/classes/class-1/students", headers=AUTH_HEADERS)
     assert response.status_code == 200
-    data = response.json()
+    data = _data(response)
     assert data["class_id"] == "class-1"
     assert len(data["students"]) >= 2
     ids = [item["student_id"] for item in data["students"]]
@@ -118,15 +126,15 @@ def test_student_detail_and_cognition_endpoints() -> None:
     _seed_monitor_data()
     client = TestClient(app)
 
-    detail = client.get("/api/v1/teacher/students/stu-a")
+    detail = client.get("/api/v1/teacher/students/stu-a", headers=AUTH_HEADERS)
     assert detail.status_code == 200
-    detail_data = detail.json()
+    detail_data = _data(detail)
     assert detail_data["student_id"] == "stu-a"
     assert detail_data["mastery_score"] == 0.3
 
-    cognition = client.get("/api/v1/teacher/students/stu-a/cognition")
+    cognition = client.get("/api/v1/teacher/students/stu-a/cognition", headers=AUTH_HEADERS)
     assert cognition.status_code == 200
-    cognition_data = cognition.json()
+    cognition_data = _data(cognition)
     assert cognition_data["student_id"] == "stu-a"
     assert cognition_data["misconceptions"] == ["fractions"]
 
@@ -135,9 +143,9 @@ def test_student_agent_logs_endpoint_returns_ordered_logs() -> None:
     _seed_monitor_data()
     client = TestClient(app)
 
-    response = client.get("/api/v1/teacher/students/stu-a/agent-logs")
+    response = client.get("/api/v1/teacher/students/stu-a/agent-logs", headers=AUTH_HEADERS)
     assert response.status_code == 200
-    data = response.json()
+    data = _data(response)
     assert data["student_id"] == "stu-a"
     assert len(data["logs"]) >= 2
     timestamps = [item["timestamp"] for item in data["logs"] if item["timestamp"]]
@@ -151,9 +159,10 @@ def test_student_interactions_endpoint_supports_topic_filter() -> None:
     response = client.get(
         "/api/v1/teacher/students/stu-a/interactions",
         params={"topic": "geometry"},
+        headers=AUTH_HEADERS,
     )
     assert response.status_code == 200
-    data = response.json()
+    data = _data(response)
     assert data["student_id"] == "stu-a"
     assert data["total"] >= 1
     assert all(item["topic"] == "geometry" for item in data["items"])

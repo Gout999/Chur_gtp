@@ -520,7 +520,7 @@
                       "Step 3: Verify OpenAPI docs show typed schemas.",
                       "Step 4: Run tests to ensure compatibility."
                   ],
-        "passes":  false
+        "passes":  true
     },
     {
         "category":  "style",
@@ -531,7 +531,7 @@
                       "Step 3: Ensure error handler maps domain errors to envelope.",
                       "Step 4: Add tests for schema consistency."
                   ],
-        "passes":  false
+        "passes":  true
     },
     {
         "category":  "style",
@@ -542,7 +542,7 @@
                       "Step 3: Test unauthorized and authorized flows.",
                       "Step 4: Verify no route is accidentally public."
                   ],
-        "passes":  false
+        "passes":  true
     },
     {
         "category":  "functional",
@@ -560,7 +560,7 @@
                       "Step 10: Record verification artifacts in tests or docs.",
                       "Step 11: Update progress log with evidence links/paths."
                   ],
-        "passes":  false
+        "passes":  true
     },
     {
         "category":  "functional",
@@ -578,7 +578,7 @@
                       "Step 10: Run regression checks for core agent flow.",
                       "Step 11: Record verification artifacts in tests or docs."
                   ],
-        "passes":  false
+        "passes":  true
     },
     {
         "category":  "functional",
@@ -596,7 +596,7 @@
                       "Step 10: Validate generated_ppts and plan memory consistency.",
                       "Step 11: Record verification artifacts in tests or docs."
                   ],
-        "passes":  false
+        "passes":  true
     },
     {
         "category":  "style",
@@ -607,6 +607,6 @@
                       "Step 3: Add local test and runbook commands.",
                       "Step 4: Cross-check links with existing DEVELOPER_GUIDE."
                   ],
-        "passes":  false
+        "passes":  true
     }
 ]

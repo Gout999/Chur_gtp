@@ -2,6 +2,14 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 
+AUTH_HEADERS = {"Authorization": "Bearer test-token"}
+
+
+def _data(response):
+    body = response.json()
+    assert body["success"] is True
+    return body["data"]
+
 
 def _sample_config(strictness: str = "strict", max_push: int = 2) -> dict:
     return {
@@ -21,9 +29,13 @@ def _sample_config(strictness: str = "strict", max_push: int = 2) -> dict:
 
 def test_get_teacher_config_returns_defaults_without_existing_data() -> None:
     client = TestClient(app)
-    response = client.get("/api/v1/teacher/config", params={"teacher_id": "teacher-cfg-default"})
+    response = client.get(
+        "/api/v1/teacher/config",
+        params={"teacher_id": "teacher-cfg-default"},
+        headers=AUTH_HEADERS,
+    )
     assert response.status_code == 200
-    data = response.json()
+    data = _data(response)
     assert data["teacher_id"] == "teacher-cfg-default"
     assert data["config"]["companion_strictness"] == "moderate"
     assert data["config"]["notification_delivery"] == ["in_app"]
@@ -36,13 +48,18 @@ def test_put_and_get_teacher_global_config_roundtrip() -> None:
     put_resp = client.put(
         "/api/v1/teacher/config",
         json={"teacher_id": "teacher-cfg-1", "config": config},
+        headers=AUTH_HEADERS,
     )
     assert put_resp.status_code == 200
-    assert put_resp.json()["config"]["companion_strictness"] == "gentle"
+    assert _data(put_resp)["config"]["companion_strictness"] == "gentle"
 
-    get_resp = client.get("/api/v1/teacher/config", params={"teacher_id": "teacher-cfg-1"})
+    get_resp = client.get(
+        "/api/v1/teacher/config",
+        params={"teacher_id": "teacher-cfg-1"},
+        headers=AUTH_HEADERS,
+    )
     assert get_resp.status_code == 200
-    assert get_resp.json()["config"]["catalyst_max_daily_push"] == 4
+    assert _data(get_resp)["config"]["catalyst_max_daily_push"] == 4
 
 
 def test_class_config_override_read_write() -> None:
@@ -53,20 +70,23 @@ def test_class_config_override_read_write() -> None:
     client.put(
         "/api/v1/teacher/config",
         json={"teacher_id": "teacher-cfg-2", "config": global_config},
+        headers=AUTH_HEADERS,
     )
     put_class = client.put(
         "/api/v1/teacher/classes/class-cfg-1/config",
         json={"teacher_id": "teacher-cfg-2", "config": class_config},
+        headers=AUTH_HEADERS,
     )
     assert put_class.status_code == 200
-    assert put_class.json()["config"]["companion_strictness"] == "strict"
+    assert _data(put_class)["config"]["companion_strictness"] == "strict"
 
     get_class = client.get(
         "/api/v1/teacher/classes/class-cfg-1/config",
         params={"teacher_id": "teacher-cfg-2"},
+        headers=AUTH_HEADERS,
     )
     assert get_class.status_code == 200
-    data = get_class.json()
+    data = _data(get_class)
     assert data["config"]["companion_strictness"] == "strict"
     assert data["config"]["catalyst_max_daily_push"] == 1
 
@@ -76,6 +96,7 @@ def test_notification_config_endpoint_updates_notification_fields() -> None:
     client.put(
         "/api/v1/teacher/config",
         json={"teacher_id": "teacher-cfg-3", "config": _sample_config()},
+        headers=AUTH_HEADERS,
     )
 
     update_resp = client.put(
@@ -85,8 +106,9 @@ def test_notification_config_endpoint_updates_notification_fields() -> None:
             "notification_escalation_threshold": "any",
             "notification_delivery": ["push"],
         },
+        headers=AUTH_HEADERS,
     )
     assert update_resp.status_code == 200
-    data = update_resp.json()
+    data = _data(update_resp)
     assert data["config"]["notification_escalation_threshold"] == "any"
     assert data["config"]["notification_delivery"] == ["push"]

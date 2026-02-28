@@ -3,6 +3,14 @@ from fastapi.testclient import TestClient
 from app.main import app
 from memory.shared import shared_memory
 
+AUTH_HEADERS = {"Authorization": "Bearer test-token"}
+
+
+def _data(response):
+    body = response.json()
+    assert body["success"] is True
+    return body["data"]
+
 
 def _upload_material(client: TestClient) -> str:
     payload = {
@@ -14,16 +22,20 @@ def _upload_material(client: TestClient) -> str:
         "content_type": "application/pdf",
         "tags": ["algebra", "grade8"],
     }
-    response = client.post("/api/v1/teacher/materials/upload", json=payload)
+    response = client.post("/api/v1/teacher/materials/upload", json=payload, headers=AUTH_HEADERS)
     assert response.status_code == 200
-    return response.json()["material_id"]
+    return _data(response)["material_id"]
 
 
 def test_teacher_material_upload_persists_to_shared_memory() -> None:
     client = TestClient(app)
 
     material_id = _upload_material(client)
-    data = client.get(f"/api/v1/teacher/materials/{material_id}/status").json()
+    status_response = client.get(
+        f"/api/v1/teacher/materials/{material_id}/status",
+        headers=AUTH_HEADERS,
+    )
+    data = _data(status_response)
 
     assert data["status"] == "queued"
     assert data["material_id"].startswith("mat_")
@@ -38,9 +50,9 @@ def test_teacher_material_upload_persists_to_shared_memory() -> None:
 
 def test_teacher_material_status_unknown_returns_404() -> None:
     client = TestClient(app)
-    response = client.get("/api/v1/teacher/materials/mat_unknown/status")
+    response = client.get("/api/v1/teacher/materials/mat_unknown/status", headers=AUTH_HEADERS)
     assert response.status_code == 404
-    assert response.json()["detail"] == "material_not_found"
+    assert response.json()["error"]["detail"] == "material_not_found"
 
 
 def test_teacher_material_boundary_update_writes_adjustment() -> None:
@@ -50,9 +62,10 @@ def test_teacher_material_boundary_update_writes_adjustment() -> None:
     response = client.put(
         f"/api/v1/teacher/materials/{material_id}/boundary",
         json={"strictness": "strict", "reason": "exam week"},
+        headers=AUTH_HEADERS,
     )
     assert response.status_code == 200
-    data = response.json()
+    data = _data(response)
     assert data["material_id"] == material_id
     assert data["strictness"] == "strict"
 
@@ -74,9 +87,10 @@ def test_teacher_material_importance_update_writes_marks() -> None:
                 {"concept": "graphing", "level": "medium"},
             ]
         },
+        headers=AUTH_HEADERS,
     )
     assert response.status_code == 200
-    data = response.json()
+    data = _data(response)
     assert data["material_id"] == material_id
     assert data["marks_saved"] == 2
 
@@ -90,9 +104,12 @@ def test_teacher_material_knowledge_graph_returns_schema() -> None:
     client = TestClient(app)
     material_id = _upload_material(client)
 
-    response = client.get(f"/api/v1/teacher/materials/{material_id}/knowledge-graph")
+    response = client.get(
+        f"/api/v1/teacher/materials/{material_id}/knowledge-graph",
+        headers=AUTH_HEADERS,
+    )
     assert response.status_code == 200
-    data = response.json()
+    data = _data(response)
 
     assert data["material_id"] == material_id
     assert isinstance(data["nodes"], list)
@@ -108,21 +125,23 @@ def test_teacher_material_delete_is_idempotent_and_hides_status() -> None:
     client.put(
         f"/api/v1/teacher/materials/{material_id}/boundary",
         json={"strictness": "moderate"},
+        headers=AUTH_HEADERS,
     )
     client.put(
         f"/api/v1/teacher/materials/{material_id}/importance",
         json={"marks": [{"concept": "fractions", "level": "low"}]},
+        headers=AUTH_HEADERS,
     )
 
-    delete_response = client.delete(f"/api/v1/teacher/materials/{material_id}")
+    delete_response = client.delete(f"/api/v1/teacher/materials/{material_id}", headers=AUTH_HEADERS)
     assert delete_response.status_code == 200
-    assert delete_response.json()["deleted"] is True
+    assert _data(delete_response)["deleted"] is True
 
-    second_delete = client.delete(f"/api/v1/teacher/materials/{material_id}")
+    second_delete = client.delete(f"/api/v1/teacher/materials/{material_id}", headers=AUTH_HEADERS)
     assert second_delete.status_code == 200
-    assert second_delete.json()["deleted"] is True
+    assert _data(second_delete)["deleted"] is True
 
-    status_response = client.get(f"/api/v1/teacher/materials/{material_id}/status")
+    status_response = client.get(f"/api/v1/teacher/materials/{material_id}/status", headers=AUTH_HEADERS)
     assert status_response.status_code == 404
 
     boundary_entry = shared_memory.read("teacher_boundary_adjustments", material_id)
