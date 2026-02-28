@@ -14,9 +14,9 @@ interface ColumnData {
 }
 
 const columns: ColumnData[] = [
-  { id: 'revision', label: 'Revision', image: '/images/create-bg.jpg', color: 'from-orange-500/20' },
-  { id: 'homework', label: 'Homework', image: '/images/grow-bg.jpg', color: 'from-cyan-500/20' },
-  { id: 'mistakes', label: 'Mistakes', image: '/images/experience-bg.jpg', color: 'from-yellow-500/20' },
+  { id: 'revision', label: 'Revision', image: '/images/revision-bg.jpg', color: 'from-orange-500/20' },
+  { id: 'homework', label: 'Homework', image: '/images/homework-bg.jpg', color: 'from-cyan-500/20' },
+  { id: 'mistakes', label: 'Mistakes', image: '/images/mistakes-bg.jpg', color: 'from-yellow-500/20' },
 ];
 
 export default function HeroSection({ onPageChange }: HeroSectionProps) {

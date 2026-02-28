@@ -19,7 +19,7 @@ export default function RevisionPage({ }: CreatePageProps) {
       <div className="relative h-[40vh] overflow-hidden flex items-end pb-12">
         <div className="absolute inset-0">
           <img
-            src="/images/create-bg.jpg"
+            src="/images/revision-bg.jpg"
             alt="Revision"
             className="w-full h-full object-cover blur-sm scale-105"
           />

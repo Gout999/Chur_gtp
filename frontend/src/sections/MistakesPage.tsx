@@ -242,7 +242,7 @@ export default function ExperiencePage({ onPageChange }: ExperiencePageProps) {
         {/* Background Video/Image */}
         <div className="absolute inset-0">
           <img
-            src="/images/experience-bg.jpg"
+            src="/images/mistakes-bg.jpg"
             alt="Experience"
             className="w-full h-full object-cover"
           />

@@ -14,9 +14,9 @@ interface ColumnData {
 }
 
 const columns: ColumnData[] = [
-  { id: 'teacher-classes' as PageType, label: 'Classes', image: '/images/create-bg.jpg', color: 'from-orange-500/20' },
-  { id: 'teacher-assignments' as PageType, label: 'Assignments', image: '/images/grow-bg.jpg', color: 'from-cyan-500/20' },
-  { id: 'teacher-analytics' as PageType, label: 'Analytics', image: '/images/experience-bg.jpg', color: 'from-yellow-500/20' },
+  { id: 'teacher-classes' as PageType, label: 'Classes', image: '/images/revision-bg.jpg', color: 'from-orange-500/20' },
+  { id: 'teacher-assignments' as PageType, label: 'Assignments', image: '/images/homework-bg.jpg', color: 'from-cyan-500/20' },
+  { id: 'teacher-analytics' as PageType, label: 'Analytics', image: '/images/mistakes-bg.jpg', color: 'from-yellow-500/20' },
 ];
 
 export default function TeacherDashboard({ onPageChange }: TeacherDashboardProps) {

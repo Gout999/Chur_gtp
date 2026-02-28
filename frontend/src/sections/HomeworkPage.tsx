@@ -43,7 +43,7 @@ export default function GrowPage({ onPageChange }: GrowPageProps) {
       <div className="relative h-[70vh] overflow-hidden">
         <div className="absolute inset-0">
           <img
-            src="/images/grow-bg.jpg"
+            src="/images/homework-bg.jpg"
             alt="Grow"
             className="w-full h-full object-cover"
           />
