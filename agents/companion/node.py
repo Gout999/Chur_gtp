@@ -113,6 +113,52 @@ def _load_cognitive_model(student_id: str) -> Dict[str, Any]:
     return entry.get("value", {})
 
 
+def _bootstrap_cognitive_model(
+    student_id: str,
+    target_concept: str,
+) -> Dict[str, Any]:
+    """Ensure first-turn student cognition exists with default uncertainty.
+
+    Task 8 contract: on first interaction, initialize a default cognitive
+    model and set ``uncertainty=1.0`` for the target concept.
+    """
+    existing_model = _load_cognitive_model(student_id)
+    model = existing_model
+    if not existing_model:
+        now = _utc_iso()
+        model = {
+            "student_id": student_id,
+            "concepts": {},
+            "misconceptions": [],
+            "learning_style_preferences": {"preferred_strategy": None},
+            "created_at": now,
+            "updated_at": now,
+        }
+
+    concepts = model.setdefault("concepts", {})
+    changed = False
+
+    if target_concept and target_concept not in concepts:
+        concepts[target_concept] = {
+            "confidence": 0.0,
+            "uncertainty": 1.0,
+            "consecutive_errors": 0,
+            "total_attempts": 0,
+            "last_strategy": None,
+            "last_updated": _utc_iso(),
+        }
+        changed = True
+
+    if not existing_model:
+        changed = True
+
+    if changed:
+        model["updated_at"] = _utc_iso()
+        shared_memory.write(_NS_COGNITIVE, student_id, model)
+
+    return model
+
+
 def _load_knowledge_boundary(state: State) -> Dict[str, Any]:
     """Load the latest knowledge boundary from teacher_authority_graph.
 
@@ -983,7 +1029,7 @@ def socratic_companion_node(state: State) -> State:
     is_correct: Optional[bool] = payload.get("is_correct")
 
     # ── Phase 1: Load Context ─────────────────────────────────────────────
-    cog_model = _load_cognitive_model(student_id)
+    cog_model = _bootstrap_cognitive_model(student_id, target_concept)
     boundary = _load_knowledge_boundary(state)
     history = _load_interaction_history(student_id)
     session_tracker = _read_session_tracker(state)

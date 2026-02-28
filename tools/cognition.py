@@ -47,6 +47,7 @@ def _empty_concept_entry() -> Dict[str, Any]:
     """Default entry for a concept the student has never interacted with."""
     return {
         "confidence": 0.0,
+        "uncertainty": 1.0,
         "consecutive_errors": 0,
         "total_attempts": 0,
         "last_strategy": None,
@@ -214,11 +215,16 @@ def update_student_cognition_map(
         concepts[concept] = _empty_concept_entry()
 
     entry = concepts[concept]
+    # Backward-compatible hydration for pre-existing entries created before
+    # uncertainty was explicitly tracked.
+    if "uncertainty" not in entry:
+        entry["uncertainty"] = round(1.0 - float(entry.get("confidence", 0.0)), 4)
     old_confidence = entry["confidence"]
 
     delta = _compute_delta(is_correct, time_spent, help_requests)
     new_confidence = _clamp(old_confidence + delta)
     entry["confidence"] = new_confidence
+    entry["uncertainty"] = round(1.0 - new_confidence, 4)
     entry["total_attempts"] = entry.get("total_attempts", 0) + 1
     entry["last_updated"] = _utc_iso()
 

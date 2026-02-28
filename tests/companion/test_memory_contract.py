@@ -31,13 +31,6 @@ class TestNamespaceDeclarations:
         for ns in COMPANION_NAMESPACES:
             assert ns in NAMESPACES, f"Namespace '{ns}' missing from NAMESPACES"
 
-    @pytest.mark.xfail(
-        reason=(
-            "cognition_snapshots is used by _archive_snapshot via _ensure_namespace "
-            "but not yet declared in NAMESPACES. Framework team should add it."
-        ),
-        strict=True,
-    )
     def test_cognition_snapshots_declared(self):
         """cognition_snapshots is used by the cognition tool's archive writer
         and should be formally declared in the shared NAMESPACES dict."""

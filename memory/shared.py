@@ -18,6 +18,7 @@ NAMESPACES: Dict[str, str] = {
     "teacher_escalation_responses": "Teacher responses to escalations.",
     "teacher_student_messages": "Teacher-student message history.",
     "student_cognitive_models": "Companion-maintained student cognition state.",
+    "cognition_snapshots": "Archive snapshots for cognition confidence/uncertainty trends.",
     "interaction_episodes": "Agent interaction episodes.",
     "pending_escalations": "Escalations waiting for teacher handling.",
     "pending_validations": "Catalyst outputs waiting for Architect validation.",

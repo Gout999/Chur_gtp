@@ -104,6 +104,17 @@ class TestNewStudent:
         assert model is not None
         assert model["value"]["student_id"] == "brand-new-student"
 
+    def test_new_concept_initializes_uncertainty_field(self, make_interaction_data):
+        concept = "newton_second_law"
+        update_student_cognition_map(
+            "brand-new-student-uncertainty",
+            make_interaction_data(concept=concept, is_correct=None),
+        )
+        model = shared_memory.read("student_cognitive_models", "brand-new-student-uncertainty")
+        entry = model["value"]["concepts"][concept]
+        assert "uncertainty" in entry
+        assert entry["confidence"] + entry["uncertainty"] == pytest.approx(1.0, abs=0.01)
+
 
 # ---- Misconceptions --------------------------------------------------------
 
@@ -194,6 +205,23 @@ class TestPersistence:
             "momentum should have exactly 1 snapshot (not duplicated from "
             "a full-model sweep)"
         )
+
+    def test_concept_uncertainty_stays_in_sync_with_snapshot(self, make_interaction_data):
+        sid, concept = "s-sync", "force"
+        update_student_cognition_map(
+            sid, make_interaction_data(concept=concept, is_correct=True, time_spent=5.0),
+        )
+        model = shared_memory.read("student_cognitive_models", sid)
+        concept_entry = model["value"]["concepts"][concept]
+
+        snaps = shared_memory.read_all("cognition_snapshots")
+        student_snaps = [
+            s["value"] for s in snaps
+            if s["value"].get("student_id") == sid and s["value"].get("concept_id") == concept
+        ]
+        latest = student_snaps[-1]
+        assert concept_entry["confidence"] == pytest.approx(latest["belief_mass"], abs=0.01)
+        assert concept_entry["uncertainty"] == pytest.approx(latest["uncertainty"], abs=0.01)
 
 
 # ---- Learning preferences --------------------------------------------------

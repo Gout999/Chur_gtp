@@ -64,6 +64,22 @@ class TestContextLoading:
         model = shared_memory.read("student_cognitive_models", "never-seen-before")
         assert model is not None
 
+    def test_new_student_bootstraps_target_concept_uncertainty(self, make_state):
+        """First turn should initialize target concept with uncertainty=1.0
+        when correctness is unknown."""
+        student_id = "never-seen-before-uncertainty"
+        state = make_state(event_payload={
+            "student_id": student_id,
+            "target_concept": "force",
+            "is_correct": None,
+        })
+        state = socratic_companion_node(state)
+        assert state["response_to_student"]
+
+        model = shared_memory.read("student_cognitive_models", student_id)
+        concept = model["value"]["concepts"]["force"]
+        assert concept["uncertainty"] == pytest.approx(1.0, abs=0.01)
+
 
 # ---- Strategy switching (PRD: >=3 -> switch, >=5 -> escalate) ---------------
 
