@@ -12,6 +12,8 @@ from tools.cognition import (
     _DELTA_CORRECT_SLOW,
     _DELTA_INCORRECT,
     _LOW_CONFIDENCE_THRESHOLD,
+    _detect_misconception,
+    _infer_misconception_pattern,
     update_student_cognition_map,
 )
 
@@ -161,13 +163,37 @@ class TestPersistence:
 
     def test_archive_snapshot_written(self, make_interaction_data):
         update_student_cognition_map("s-archive", make_interaction_data())
-        episodes = shared_memory.read_all("interaction_episodes")
+        snapshots_entries = shared_memory.read_all("cognition_snapshots")
         snapshots = [
-            e for e in episodes
+            e for e in snapshots_entries
             if e["value"].get("type") == "cognition_snapshot"
             and e["value"].get("student_id") == "s-archive"
         ]
         assert len(snapshots) >= 1
+
+    def test_archive_snapshot_only_for_updated_concept(self, make_interaction_data):
+        """Snapshot should only be written for the concept that was updated,
+        not for every concept in the model."""
+        sid = "s-snap-single"
+        update_student_cognition_map(
+            sid, make_interaction_data(concept="force", is_correct=True, time_spent=5.0),
+        )
+        update_student_cognition_map(
+            sid, make_interaction_data(concept="momentum", is_correct=False),
+        )
+        snapshots = shared_memory.read_all("cognition_snapshots")
+        student_snaps = [
+            e for e in snapshots
+            if e["value"].get("student_id") == sid
+        ]
+        concepts_snapped = [s["value"]["concept_id"] for s in student_snaps]
+        assert "force" in concepts_snapped
+        assert "momentum" in concepts_snapped
+        momentum_snaps = [c for c in concepts_snapped if c == "momentum"]
+        assert len(momentum_snaps) == 1, (
+            "momentum should have exactly 1 snapshot (not duplicated from "
+            "a full-model sweep)"
+        )
 
 
 # ---- Learning preferences --------------------------------------------------
@@ -195,3 +221,192 @@ class TestLearningPreferences:
             sid, make_interaction_data(concept=concept, is_correct=False),
         )
         assert concept in result["recommended_focus_areas"]
+
+
+# ---- is_correct=None (neutral observation) ---------------------------------
+
+class TestIsCorrectNone:
+    """When correctness is unknown (is_correct=None), the system must treat it
+    as a neutral observation: no confidence change, no misconception, and
+    consecutive_errors unchanged.
+
+    Guards against regressions where ``if is_correct is None`` is accidentally
+    changed back to ``if not is_correct`` or ``if is_correct:``."""
+
+    def test_none_correctness_produces_zero_delta(self, make_interaction_data):
+        """_compute_delta(None, ...) must return 0.0."""
+        sid, concept = "s-none-delta", "force"
+        update_student_cognition_map(
+            sid, make_interaction_data(concept=concept, is_correct=True, time_spent=5.0),
+        )
+        model_before = shared_memory.read("student_cognitive_models", sid)
+        conf_before = model_before["value"]["concepts"][concept]["confidence"]
+
+        result = update_student_cognition_map(
+            sid, make_interaction_data(concept=concept, is_correct=None),
+        )
+        assert result["confidence_changes"][concept] == pytest.approx(0.0, abs=1e-6)
+
+        model_after = shared_memory.read("student_cognitive_models", sid)
+        assert model_after["value"]["concepts"][concept]["confidence"] == pytest.approx(
+            conf_before, abs=1e-6,
+        )
+
+    def test_none_correctness_leaves_consecutive_errors_unchanged(
+        self, make_interaction_data,
+    ):
+        """consecutive_errors must NOT increment or reset on is_correct=None."""
+        sid, concept = "s-none-err", "force"
+        for _ in range(2):
+            update_student_cognition_map(
+                sid, make_interaction_data(concept=concept, is_correct=False),
+            )
+        model = shared_memory.read("student_cognitive_models", sid)
+        errors_before = model["value"]["concepts"][concept]["consecutive_errors"]
+        assert errors_before == 2
+
+        update_student_cognition_map(
+            sid, make_interaction_data(concept=concept, is_correct=None),
+        )
+        model = shared_memory.read("student_cognitive_models", sid)
+        assert model["value"]["concepts"][concept]["consecutive_errors"] == errors_before
+
+    def test_none_correctness_skips_misconception_detection(
+        self, make_interaction_data,
+    ):
+        """No misconception should be recorded when correctness is unknown."""
+        result = update_student_cognition_map(
+            "s-none-misc",
+            make_interaction_data(
+                is_correct=None,
+                student_response="force = mass * velocity",
+            ),
+        )
+        assert len(result["new_misconceptions"]) == 0
+
+    def test_none_correctness_does_not_trigger_false_focus_path(
+        self, make_interaction_data, seed_cognitive_model,
+    ):
+        """The ``if is_correct is False`` path that explicitly adds the
+        current concept to recommended_focus must NOT fire when
+        is_correct=None.  We pre-seed confidence above the threshold so
+        the concept wouldn't appear via the low-confidence scan either."""
+        sid, concept = "s-none-focus", "well_known_topic"
+        seed_cognitive_model(
+            student_id=sid,
+            concepts={
+                concept: {
+                    "confidence": 0.8,
+                    "consecutive_errors": 0,
+                    "total_attempts": 5,
+                    "last_strategy": None,
+                    "last_updated": "2024-01-01T00:00:00+00:00",
+                },
+            },
+        )
+        result = update_student_cognition_map(
+            sid,
+            make_interaction_data(concept=concept, is_correct=None),
+        )
+        assert concept not in result["recommended_focus_areas"]
+
+
+# ---- Misconception pattern detection ---------------------------------------
+
+class TestMisconceptionPatterns:
+    """Tests for _infer_misconception_pattern and _detect_misconception
+    which detect specific concept confusions from student responses."""
+
+    def test_detects_force_momentum_confusion(self):
+        """Student says 'momentum' when concept is 'force' ->
+        pattern must be 'confuses_force_and_momentum'."""
+        pattern = _infer_misconception_pattern(
+            "force", "I think force is the same as momentum",
+        )
+        assert pattern == "confuses_force_and_momentum"
+
+    def test_detects_force_velocity_confusion(self):
+        """Student uses 'velocity' for force concept ->
+        pattern must name the specific sibling."""
+        pattern = _infer_misconception_pattern(
+            "force", "force equals mass times velocity",
+        )
+        assert "velocity" in pattern
+        assert pattern.startswith("confuses_force_and_")
+
+    def test_falls_back_to_generic_on_no_alias_match(self):
+        """When no known concept alias is detected, fallback to
+        'incorrect_on_{concept}'."""
+        pattern = _infer_misconception_pattern(
+            "thermodynamics", "I have no idea",
+        )
+        assert pattern == "incorrect_on_thermodynamics"
+
+    def test_detect_misconception_returns_none_on_correct(self):
+        """_detect_misconception must return None when is_correct=True."""
+        assert _detect_misconception("force", "F = m*a", True) is None
+
+    def test_detect_misconception_records_on_incorrect(self):
+        """_detect_misconception must return a record when is_correct=False."""
+        result = _detect_misconception(
+            "force", "force = mass * velocity", False,
+        )
+        assert result is not None
+        assert result["concept"] == "force"
+        assert "pattern" in result
+
+
+# ---- hint_strategy pass-through ---------------------------------------------
+
+class TestHintStrategyPassthrough:
+
+    def test_hint_strategy_stored_in_concept_entry(self, make_interaction_data):
+        """When interaction_data contains hint_strategy, the concept entry's
+        last_strategy must be set accordingly."""
+        sid, concept = "s-strat-pass", "force"
+        data = make_interaction_data(concept=concept, is_correct=False)
+        data["hint_strategy"] = "analogy"
+        update_student_cognition_map(sid, data)
+        model = shared_memory.read("student_cognitive_models", sid)
+        assert model["value"]["concepts"][concept]["last_strategy"] == "analogy"
+
+    def test_no_hint_strategy_leaves_last_strategy_unchanged(
+        self, make_interaction_data, seed_cognitive_model,
+    ):
+        """When hint_strategy is None or absent, last_strategy must not change."""
+        sid, concept = "s-strat-none", "force"
+        seed_cognitive_model(
+            student_id=sid,
+            concepts={
+                concept: {
+                    "confidence": 0.5,
+                    "consecutive_errors": 0,
+                    "total_attempts": 1,
+                    "last_strategy": "socratic",
+                    "last_updated": "2024-01-01T00:00:00+00:00",
+                },
+            },
+        )
+        data = make_interaction_data(concept=concept, is_correct=True, time_spent=5.0)
+        update_student_cognition_map(sid, data)
+        model = shared_memory.read("student_cognitive_models", sid)
+        assert model["value"]["concepts"][concept]["last_strategy"] == "socratic"
+
+
+# ---- Total attempts tracking -----------------------------------------------
+
+class TestTotalAttempts:
+
+    def test_total_attempts_incremented_every_interaction(self, make_interaction_data):
+        """total_attempts must increment by 1 on every call, regardless of
+        correctness (True, False, or None)."""
+        sid, concept = "s-attempts", "force"
+        for val in [True, False, None, True]:
+            update_student_cognition_map(
+                sid,
+                make_interaction_data(
+                    concept=concept, is_correct=val, time_spent=10.0,
+                ),
+            )
+        model = shared_memory.read("student_cognitive_models", sid)
+        assert model["value"]["concepts"][concept]["total_attempts"] == 4

@@ -18,6 +18,11 @@ COMPANION_NAMESPACES = {
     "interaction_episodes",
 }
 
+COMPANION_NAMESPACES_INCLUDING_RUNTIME = COMPANION_NAMESPACES | {
+    "cognition_snapshots",
+    "pending_escalations",
+}
+
 
 class TestNamespaceDeclarations:
 
@@ -25,6 +30,18 @@ class TestNamespaceDeclarations:
         """All namespaces used by Companion must be declared in NAMESPACES."""
         for ns in COMPANION_NAMESPACES:
             assert ns in NAMESPACES, f"Namespace '{ns}' missing from NAMESPACES"
+
+    @pytest.mark.xfail(
+        reason=(
+            "cognition_snapshots is used by _archive_snapshot via _ensure_namespace "
+            "but not yet declared in NAMESPACES. Framework team should add it."
+        ),
+        strict=True,
+    )
+    def test_cognition_snapshots_declared(self):
+        """cognition_snapshots is used by the cognition tool's archive writer
+        and should be formally declared in the shared NAMESPACES dict."""
+        assert "cognition_snapshots" in NAMESPACES
 
 
 class TestReadWriteContract:
@@ -80,6 +97,35 @@ class TestIsolation:
         """Reading a key that doesn't exist returns None, not an exception."""
         result = shared_memory.read("student_cognitive_models", "ghost-student")
         assert result is None
+
+
+class TestCognitionSnapshotContract:
+    """Tests for the cognition_snapshots namespace used by _archive_snapshot.
+    The namespace is auto-created via _ensure_namespace; these tests verify
+    the snapshot schema matches PRD §3.1."""
+
+    def test_snapshot_written_with_correct_schema(self):
+        """Archive snapshot must contain belief_mass, uncertainty, and
+        standard identifiers."""
+        from tools.cognition import update_student_cognition_map
+
+        update_student_cognition_map("s-snap", {
+            "concept": "force",
+            "student_response": "F = ma",
+            "is_correct": True,
+            "time_spent": 10.0,
+            "help_requests": 0,
+        })
+        entries = shared_memory.read_all("cognition_snapshots")
+        assert len(entries) >= 1
+
+        snap = entries[0]["value"]
+        assert snap["type"] == "cognition_snapshot"
+        assert snap["student_id"] == "s-snap"
+        assert snap["concept_id"] == "force"
+        assert 0.0 <= snap["belief_mass"] <= 1.0
+        assert 0.0 <= snap["uncertainty"] <= 1.0
+        assert snap["belief_mass"] + snap["uncertainty"] == pytest.approx(1.0, abs=0.01)
 
 
 class TestUpdateSemantics:

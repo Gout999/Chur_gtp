@@ -27,6 +27,7 @@ _NS_EPISODES = "interaction_episodes"
 _NS_ESCALATIONS = "pending_escalations"
 
 _STRATEGIES: List[str] = ["socratic", "decompose", "analogy", "confront"]
+_NON_SOCRATIC_STRATEGIES: List[str] = ["decompose", "analogy", "confront"]
 
 _ERROR_TYPE_TO_STRATEGY: Dict[str, str] = {
     "conceptual": "socratic",
@@ -54,20 +55,20 @@ def _load_cognitive_model(student_id: str) -> Dict[str, Any]:
     return entry.get("value", {})
 
 
-def _update_last_strategy(
-    model: Dict[str, Any],
-    student_id: str,
-    concept: str,
-    strategy: str,
-) -> None:
-    """Write the chosen strategy back so cognition tracking stays current."""
-    if not model:
-        return
-    concepts = model.get("concepts", {})
-    if concept in concepts:
-        concepts[concept]["last_strategy"] = strategy
-        model["updated_at"] = _utc_iso()
-        shared_memory.write(_NS_COGNITIVE, student_id, model)
+_DIRECT_ANSWER_PATTERNS = [
+    "the answer is",
+    "the solution is",
+    "the formula is",
+    "the correct answer",
+    "here is the answer",
+    "the result is",
+]
+
+
+def _contains_direct_answer(text: str) -> bool:
+    """Return True if the text appears to contain a direct answer."""
+    text_lower = text.lower()
+    return any(pattern in text_lower for pattern in _DIRECT_ANSWER_PATTERNS)
 
 
 # ---------------------------------------------------------------------------
@@ -78,25 +79,61 @@ def _select_strategy(
     error_analysis: Dict[str, Any],
     concept_entry: Dict[str, Any],
 ) -> str:
-    """Pick a hint strategy, auto-switching when the same one keeps failing."""
+    """Pick a hint strategy, auto-switching when the same one keeps failing.
+
+    The node may inject ``effective_consecutive_errors`` into error_analysis
+    to account for the current (not-yet-persisted) interaction.  This takes
+    precedence over the stored ``consecutive_errors`` in the concept entry.
+    """
     base = _ERROR_TYPE_TO_STRATEGY.get(
         error_analysis.get("type", ""),
         "socratic",
     )
 
-    consecutive = concept_entry.get("consecutive_errors", 0)
+    consecutive = error_analysis.get(
+        "effective_consecutive_errors",
+        concept_entry.get("consecutive_errors", 0),
+    )
     last = concept_entry.get("last_strategy")
 
-    if consecutive >= _STRATEGY_AUTO_SWITCH_THRESHOLD and last is not None:
-        try:
-            idx = _STRATEGIES.index(last)
-        except ValueError:
-            idx = 0
-        base = _STRATEGIES[(idx + 1) % len(_STRATEGIES)]
-        logger.info(
-            "Auto-switching strategy from %s to %s (consecutive_errors=%d)",
-            last, base, consecutive,
-        )
+    if consecutive >= _STRATEGY_AUTO_SWITCH_THRESHOLD:
+        err_type = error_analysis.get("type", "")
+
+        # In persistent conceptual/misconception cases, prefer contradiction-
+        # based guidance to break repeated incorrect mental models.
+        if err_type == "misconception" or (
+            err_type == "conceptual" and last == "socratic"
+        ):
+            if last != "confront":
+                logger.info(
+                    "Auto-switching strategy from %s to confront "
+                    "(error_type=%s, consecutive_errors=%d)",
+                    last, err_type, consecutive,
+                )
+            return "confront"
+
+        if err_type == "conceptual" and last in _NON_SOCRATIC_STRATEGIES:
+            idx = _NON_SOCRATIC_STRATEGIES.index(last)
+            nxt = _NON_SOCRATIC_STRATEGIES[
+                (idx + 1) % len(_NON_SOCRATIC_STRATEGIES)
+            ]
+            logger.info(
+                "Auto-rotating conceptual strategy from %s to %s "
+                "(consecutive_errors=%d)",
+                last, nxt, consecutive,
+            )
+            return nxt
+
+        if last is not None and (base == last or err_type == ""):
+            try:
+                idx = _STRATEGIES.index(last)
+            except ValueError:
+                idx = 0
+            base = _STRATEGIES[(idx + 1) % len(_STRATEGIES)]
+            logger.info(
+                "Auto-switching strategy from %s to %s (consecutive_errors=%d)",
+                last, base, consecutive,
+            )
 
     return base
 
@@ -283,11 +320,17 @@ def construct_hint(
     llm_result = _llm_generate_hint(
         strategy, current_input, target_concept, analysis, misconceptions,
     )
-    if llm_result is not None:
+    if llm_result is not None and not _contains_direct_answer(
+        llm_result.get("hint_content", ""),
+    ):
         hint_content = llm_result["hint_content"]
         follow_ups = llm_result.get("follow_up_questions", [])
         resp_type = llm_result.get("expected_response_type", "explanation")
     else:
+        if llm_result is not None:
+            logger.warning(
+                "LLM hint contained a direct answer; falling back to template",
+            )
         tmpl = _template_hint(strategy, current_input, target_concept)
         hint_content = tmpl["hint_content"]
         follow_ups = tmpl["follow_up_questions"]
@@ -295,8 +338,6 @@ def construct_hint(
 
     confidence = concept_entry.get("confidence", 0.5)
     difficulty = _difficulty_from_confidence(confidence)
-
-    _update_last_strategy(cog_model, student_id, target_concept, strategy)
 
     logger.info(
         "construct_hint student=%s concept=%s strategy=%s difficulty=%.2f",
@@ -332,6 +373,10 @@ _URGENCY_RESPONSE_TIMES: Dict[str, str] = {
 }
 
 
+_VALID_REASONS = frozenset(_ESCALATION_MESSAGES.keys())
+_VALID_URGENCIES = frozenset(_URGENCY_RESPONSE_TIMES.keys())
+
+
 @tool("escalate_to_human")
 def escalate_to_human(
     student_id: str,
@@ -360,13 +405,24 @@ def escalate_to_human(
             "student_message": str
         }
     """
+    if reason not in _VALID_REASONS:
+        logger.warning(
+            "Invalid escalation reason '%s'; defaulting to 'frustration'",
+            reason,
+        )
+        reason = "frustration"
+
+    if urgency not in _VALID_URGENCIES:
+        logger.warning(
+            "Invalid urgency '%s'; defaulting to 'medium'",
+            urgency,
+        )
+        urgency = "medium"
+
     escalation_id = f"esc_{uuid4().hex[:12]}"
     now = _utc_iso()
-    student_message = _ESCALATION_MESSAGES.get(
-        reason,
-        "老师很快会来帮助你，请稍等。",
-    )
-    estimated = _URGENCY_RESPONSE_TIMES.get(urgency, "within a few hours")
+    student_message = _ESCALATION_MESSAGES[reason]
+    estimated = _URGENCY_RESPONSE_TIMES[urgency]
 
     escalation_record = {
         "escalation_id": escalation_id,

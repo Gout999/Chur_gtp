@@ -88,16 +88,31 @@ class TestAlwaysUpdateCognition:
         tool_names = {t["tool"] for t in state["tools_to_call"]}
         assert "update_student_cognition_map" in tool_names
 
+    def test_cognition_update_when_correctness_unknown(self, make_state):
+        """When is_correct=None (correctness unknown), the cognition tool
+        must still be called.  This must produce a neutral 0.0 delta,
+        not skip the update entirely."""
+        state = make_state(
+            event_payload={
+                "student_id": "s-ir3-none",
+                "content": "Let me think...",
+                "is_correct": None,
+            },
+        )
+        state = socratic_companion_node(state)
+        tool_names = {t["tool"] for t in state["tools_to_call"]}
+        assert "update_student_cognition_map" in tool_names, (
+            "cognition not updated when is_correct=None"
+        )
+        cognition = state["working_memory"]["cognitive_model"]
+        concept = state["event_payload"]["target_concept"]
+        assert cognition["confidence_changes"][concept] == pytest.approx(0.0, abs=1e-6)
+
 
 # ---- Rule 4: Strategy self-adaptive ---------------------------------------
 
 class TestStrategyAdaptive:
 
-    @pytest.mark.xfail(
-        reason="construct_hint / node do not yet implement auto-switching "
-               "after >=3 consecutive same-strategy failures",
-        strict=True,
-    )
     def test_strategy_must_switch_after_3_failures(
         self, make_state, seed_cognitive_model,
     ):
@@ -130,10 +145,6 @@ class TestStrategyAdaptive:
         )
         assert hint["strategy"] != "socratic"
 
-    @pytest.mark.xfail(
-        reason="Node does not yet trigger escalation after >=5 failures",
-        strict=True,
-    )
     def test_escalate_after_5_failures(self, make_state, seed_cognitive_model):
         sid, concept = "s-ir5", "momentum"
         seed_cognitive_model(
@@ -165,11 +176,6 @@ class TestStrategyAdaptive:
 
 class TestBoundaryRespected:
 
-    @pytest.mark.xfail(
-        reason="Node does not yet enforce knowledge boundary from "
-               "teacher_authority_graph (strict scope -> decline)",
-        strict=True,
-    )
     def test_boundary_respected(self, make_state, seed_authority_graph):
         seed_authority_graph(
             scope_level="strict",

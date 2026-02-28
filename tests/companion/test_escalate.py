@@ -77,6 +77,29 @@ class TestComfortMessages:
         assert r_frust["student_message"] != r_fail["student_message"]
 
 
+class TestInputValidation:
+    """Invalid reason/urgency values from LLM must be normalised, not crash."""
+
+    def test_invalid_reason_defaults_to_frustration(self):
+        result = escalate_to_human(
+            student_id="s1",
+            reason="confused_and_bored",
+            context_summary="LLM hallucinated reason",
+            urgency="medium",
+        )
+        assert REQUIRED_KEYS.issubset(result.keys())
+        assert len(result["student_message"]) > 0
+
+    def test_invalid_urgency_defaults_to_medium(self):
+        result = escalate_to_human(
+            student_id="s1",
+            reason="frustration",
+            context_summary="LLM hallucinated urgency",
+            urgency="critical",
+        )
+        assert result["estimated_response_time"] == "within a few hours"
+
+
 class TestEscalationPersistence:
 
     def test_escalation_logged_to_interaction_episodes(self):

@@ -20,6 +20,7 @@ logger = logging.getLogger("eduguide.tools.cognition")
 
 _NS_COGNITIVE = "student_cognitive_models"
 _NS_EPISODES = "interaction_episodes"
+_NS_SNAPSHOTS = "cognition_snapshots"
 
 FAST_RESPONSE_THRESHOLD = 30.0  # seconds
 
@@ -74,14 +75,17 @@ def _load_model(student_id: str) -> Dict[str, Any]:
     return _init_model(student_id)
 
 
-def _compute_delta(is_correct: bool, time_spent: float, help_requests: int) -> float:
+def _compute_delta(is_correct, time_spent: float, help_requests: int) -> float:
     """
     Dempster-Shafer inspired evidence weighting.
 
     Positive evidence (correct answer) strength is modulated by speed and
     independence.  Negative evidence (incorrect) applies a fixed penalty so
-    misconceptions are surfaced quickly.
+    misconceptions are surfaced quickly.  When ``is_correct`` is ``None``
+    (correctness unknown), a neutral delta of 0.0 is returned.
     """
+    if is_correct is None:
+        return 0.0
     if is_correct:
         if time_spent <= FAST_RESPONSE_THRESHOLD and help_requests == 0:
             return _DELTA_CORRECT_FAST
@@ -149,20 +153,23 @@ def _persist_model(student_id: str, model: Dict[str, Any]) -> None:
     shared_memory.write(_NS_COGNITIVE, student_id, model)
 
 
-def _archive_snapshot(student_id: str, model: Dict[str, Any]) -> None:
-    """Write per-concept snapshots matching PRD §3.1 cognition_snapshots schema."""
+def _archive_snapshot(
+    student_id: str,
+    concept: str,
+    concept_data: Dict[str, Any],
+) -> None:
+    """Write a snapshot for the updated concept (PRD §3.1 cognition_snapshots)."""
     now = _utc_iso()
-    for concept_name, concept_data in model.get("concepts", {}).items():
-        confidence = concept_data.get("confidence", 0.0)
-        snapshot_key = f"{student_id}:{concept_name}:{now}"
-        shared_memory.write(_NS_EPISODES, snapshot_key, {
-            "type": "cognition_snapshot",
-            "student_id": student_id,
-            "concept_id": concept_name,
-            "belief_mass": confidence,
-            "uncertainty": round(1.0 - confidence, 4),
-            "last_updated": now,
-        })
+    confidence = concept_data.get("confidence", 0.0)
+    snapshot_key = f"{student_id}:{concept}:{now}"
+    shared_memory.write(_NS_SNAPSHOTS, snapshot_key, {
+        "type": "cognition_snapshot",
+        "student_id": student_id,
+        "concept_id": concept,
+        "belief_mass": confidence,
+        "uncertainty": round(1.0 - confidence, 4),
+        "last_updated": now,
+    })
 
 
 @tool("update_student_cognition_map")
@@ -194,9 +201,10 @@ def update_student_cognition_map(
     """
     concept: str = interaction_data.get("concept", "unknown_concept")
     student_response: str = interaction_data.get("student_response", "")
-    is_correct: bool = interaction_data.get("is_correct", False)
+    is_correct = interaction_data.get("is_correct")  # None when unknown
     time_spent: float = float(interaction_data.get("time_spent", 0.0))
     help_requests: int = int(interaction_data.get("help_requests", 0))
+    hint_strategy: str | None = interaction_data.get("hint_strategy")
 
     model = _load_model(student_id)
     concepts: Dict[str, Any] = model.setdefault("concepts", {})
@@ -214,16 +222,20 @@ def update_student_cognition_map(
     entry["total_attempts"] = entry.get("total_attempts", 0) + 1
     entry["last_updated"] = _utc_iso()
 
-    if is_correct:
+    if hint_strategy is not None:
+        entry["last_strategy"] = hint_strategy
+
+    if is_correct is True:
         entry["consecutive_errors"] = 0
-    else:
+    elif is_correct is False:
         entry["consecutive_errors"] = entry.get("consecutive_errors", 0) + 1
 
     new_misconceptions: List[Dict[str, Any]] = []
-    misconception = _detect_misconception(concept, student_response, is_correct)
-    if misconception is not None:
-        misconceptions.append(misconception)
-        new_misconceptions.append(misconception)
+    if is_correct is False:
+        misconception = _detect_misconception(concept, student_response, is_correct)
+        if misconception is not None:
+            misconceptions.append(misconception)
+            new_misconceptions.append(misconception)
 
     if is_correct and (time_spent > FAST_RESPONSE_THRESHOLD or help_requests > 0):
         prefs = model.setdefault("learning_style_preferences", {})
@@ -234,7 +246,7 @@ def update_student_cognition_map(
     model["updated_at"] = _utc_iso()
 
     _persist_model(student_id, model)
-    _archive_snapshot(student_id, model)
+    _archive_snapshot(student_id, concept, entry)
 
     confidence_changes: Dict[str, float] = {
         concept: round(delta, 4),
@@ -244,7 +256,7 @@ def update_student_cognition_map(
     for c_name, c_data in concepts.items():
         if c_data.get("confidence", 0.0) < _LOW_CONFIDENCE_THRESHOLD:
             recommended_focus.append(c_name)
-    if not is_correct and concept not in recommended_focus:
+    if is_correct is False and concept not in recommended_focus:
         recommended_focus.append(concept)
 
     logger.info(

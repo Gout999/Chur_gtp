@@ -21,6 +21,8 @@ def _env_int(name: str, default: int) -> int:
 class Settings:
     openai_api_key: str
     anthropic_api_key: str
+    minimax_api_key: str
+    minimax_base_url: str
     database_url: str
     redis_url: str
     chroma_host: str
@@ -35,6 +37,8 @@ class Settings:
 SETTINGS = Settings(
     openai_api_key=_ENV.get("OPENAI_API_KEY", ""),
     anthropic_api_key=_ENV.get("ANTHROPIC_API_KEY", ""),
+    minimax_api_key=_ENV.get("MINIMAX_API_KEY", ""),
+    minimax_base_url=_ENV.get("MINIMAX_BASE_URL", "https://api.minimax.io/anthropic"),
     database_url=_ENV.get("DATABASE_URL", "postgresql://user:password@localhost:5432/eduguide"),
     redis_url=_ENV.get("REDIS_URL", "redis://localhost:6379/0"),
     chroma_host=_ENV.get("CHROMA_HOST", "localhost"),
@@ -49,6 +53,8 @@ SETTINGS = Settings(
 # Backward-compatible module-level constants.
 OPENAI_API_KEY = SETTINGS.openai_api_key
 ANTHROPIC_API_KEY = SETTINGS.anthropic_api_key
+MINIMAX_API_KEY = SETTINGS.minimax_api_key
+MINIMAX_BASE_URL = SETTINGS.minimax_base_url
 DATABASE_URL = SETTINGS.database_url
 REDIS_URL = SETTINGS.redis_url
 CHROMA_HOST = SETTINGS.chroma_host
