@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { PageType } from '@/types';
 
 interface TeacherDashboardProps {
@@ -21,6 +21,32 @@ const columns: ColumnData[] = [
 
 export default function TeacherDashboard({ onPageChange }: TeacherDashboardProps) {
   const [hoveredColumn, setHoveredColumn] = useState<PageType | null>(null);
+  const [showName, setShowName] = useState(true);
+  const [nameOpacity, setNameOpacity] = useState(0);
+
+  // Initial name display animation
+  useEffect(() => {
+    // Fade in name
+    const fadeInTimer = setTimeout(() => {
+      setNameOpacity(1);
+    }, 100);
+
+    // Start fade out after delay
+    const fadeOutTimer = setTimeout(() => {
+      setNameOpacity(0);
+    }, 1200);
+
+    // Hide name display and show dashboard
+    const hideTimer = setTimeout(() => {
+      setShowName(false);
+    }, 1700);
+
+    return () => {
+      clearTimeout(fadeInTimer);
+      clearTimeout(fadeOutTimer);
+      clearTimeout(hideTimer);
+    };
+  }, []);
 
   const getColumnWidth = (columnId: PageType) => {
     if (!hoveredColumn) return '33.333%';
@@ -30,12 +56,45 @@ export default function TeacherDashboard({ onPageChange }: TeacherDashboardProps
 
   return (
     <div className="relative w-full h-screen overflow-hidden">
+      {/* Initial Name Display Overlay */}
+      <AnimatePresence>
+        {showName && (
+          <motion.div
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="absolute inset-0 bg-white z-50 flex flex-col items-center justify-center"
+          >
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: nameOpacity, y: nameOpacity ? 0 : 20 }}
+              transition={{ duration: 0.4 }}
+              className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 tracking-[0.15em]"
+            >
+              chur-gpt
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: nameOpacity * 0.8, y: nameOpacity ? 0 : 10 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+              className="text-gray-500 text-lg mt-4 font-light"
+            >
+              Teacher Portal
+            </motion.p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Four Columns */}
-      <div className="flex w-full h-full">
+      <motion.div 
+        className="flex w-full h-full"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: showName ? 0 : 1 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+      >
         {columns.map((column, index) => (
           <motion.div
             key={column.id}
-            
             animate={{ 
               opacity: 1, 
               y: 0,
@@ -94,7 +153,7 @@ export default function TeacherDashboard({ onPageChange }: TeacherDashboardProps
             )}
           </motion.div>
         ))}
-      </div>
+      </motion.div>
 
       {/* Center Branding */}
       <div className="absolute top-8 left-0 right-0 flex flex-col items-center justify-start pointer-events-none z-10">
