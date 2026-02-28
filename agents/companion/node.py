@@ -28,7 +28,7 @@ def socratic_companion_node(state: State) -> State:
     current_input = payload.get("content", "")
     target_concept = payload.get("target_concept", "current_topic")
     error_analysis = payload.get("error_analysis") or {}
-    authority = _authority_context(state)
+    # _authority_context will be used here for knowledge-boundary checks (Task #7)
 
     hint_result = construct_hint(
         student_id=student_id,
@@ -39,14 +39,13 @@ def socratic_companion_node(state: State) -> State:
     cognition_result = update_student_cognition_map(
         student_id=student_id,
         interaction_data={
-            "input": current_input,
-            "target_concept": target_concept,
-            "error_analysis": error_analysis,
-            "authority_scope": authority.get("latest_boundary", {}),
+            "concept": target_concept,
+            "student_response": current_input,
+            "is_correct": payload.get("is_correct", False),
+            "time_spent": float(payload.get("time_spent", 0.0)),
+            "help_requests": int(payload.get("help_requests", 0)),
         },
     )
-
-    shared_memory.write("student_cognitive_models", student_id, cognition_result)
 
     interest_keywords: List[str] = payload.get("interest_keywords", [])
     if interest_keywords:
