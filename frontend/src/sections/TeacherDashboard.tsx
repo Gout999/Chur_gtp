@@ -35,7 +35,7 @@ export default function TeacherDashboard({ onPageChange }: TeacherDashboardProps
         {columns.map((column, index) => (
           <motion.div
             key={column.id}
-            initial={{ opacity: 0, y: 100 }}
+            
             animate={{ 
               opacity: 1, 
               y: 0,
@@ -97,23 +97,13 @@ export default function TeacherDashboard({ onPageChange }: TeacherDashboardProps
       </div>
 
       {/* Center Branding */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.6 }}
-          className="text-white text-3xl md:text-4xl lg:text-5xl font-medium tracking-[0.2em] mb-4"
-        >
+      <div className="absolute top-8 left-0 right-0 flex flex-col items-center justify-start pointer-events-none z-10">
+        <h1 className="text-white text-3xl md:text-4xl lg:text-5xl font-medium tracking-[0.2em]">
           chur-gpt
-        </motion.h1>
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.6 }}
-          className="text-white/80 text-lg md:text-xl font-light tracking-wide"
-        >
-          AI-Powered Teaching Platform
-        </motion.p>
+        </h1>
+        <p className="text-white/80 text-lg md:text-xl font-light tracking-wide">
+          Select a category below
+        </p>
       </div>
     </div>
   );

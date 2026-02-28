@@ -105,27 +105,20 @@ function App() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
           >
-            // Preload dashboard content - show HeroSection for student flow, TeacherDashboard for teacher flow
-            <div className={currentPage === 'home' ? 'absolute inset-0 opacity-0' : 'absolute inset-0'}>
-              {currentPage === 'teacher-dashboard' ? (
-                <TeacherDashboard onPageChange={handlePageChange} />
-              ) : (
-                <HeroSection onPageChange={handlePageChange} />
-              )}
-            </div>
-            <AnimatePresence>
-              {currentPage === 'home' && (
+            {currentPage === 'teacher-dashboard' ? (
+              <TeacherDashboard onPageChange={handlePageChange} />
+            ) : (
+              <HeroSection onPageChange={handlePageChange} />
+            )}
+            {currentPage === 'home' && (
                 <motion.div
-                  key="startpage"
                   initial={{ opacity: 1 }}
                   exit={{ opacity: 0, transition: { duration: 0.3 } }}
                   className="fixed inset-0 z-50"
-                  style={{ pointerEvents: currentPage !== 'home' ? 'none' : 'auto' }}
                 >
                   <StartPage onPageChange={handlePageChange} />
                 </motion.div>
               )}
-            </AnimatePresence>
           </motion.div>
         );
       case 'revision':
@@ -200,7 +193,7 @@ function App() {
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="text-center md:text-left">
                 <h3 className="text-xl font-medium tracking-wider mb-2">
-                  CHARLES ELENA.
+                  chur-gpt
                 </h3>
                 <p className="text-gray-400 text-sm">Do what matters</p>
               </div>
@@ -227,7 +220,7 @@ function App() {
                 </div>
               
               <div className="text-gray-500 text-sm">
-                © 2024 Charles Elena. All rights reserved.
+                © 2024 chur-gpt. All rights reserved.
               </div>
             </div>
           </div>
