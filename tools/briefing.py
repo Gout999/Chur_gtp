@@ -451,6 +451,7 @@ def _discover_connection_llm(
             for marker in ("```json", "```"):
                 if marker in content:
                     content = content.split(marker)[1]
+                    break
             if "```" in content:
                 content = content.split("```")[0]
         parsed = _json.loads(content.strip())
@@ -645,6 +646,7 @@ def _suggest_path_llm(
             for marker in ("```json", "```"):
                 if marker in content:
                     content = content.split(marker)[1]
+                    break
             if "```" in content:
                 content = content.split("```")[0]
         parsed = _json.loads(content.strip())

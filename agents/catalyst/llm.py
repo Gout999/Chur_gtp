@@ -99,11 +99,13 @@ Output format:
         return {"keywords": [], "research_directions": [], "tech_stack": [], "confidence": 0.0}
 
     try:
-        # Strip markdown code blocks if present
         if "```" in content:
             for marker in ("```json", "```"):
                 if marker in content:
-                    content = content.split(marker)[1] if marker in content else content
+                    content = content.split(marker)[1]
+                    break
+            if "```" in content:
+                content = content.split("```")[0]
         parsed = json.loads(content.strip())
         keywords = parsed.get("keywords", [])
         if isinstance(keywords, list):
