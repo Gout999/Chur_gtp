@@ -20,7 +20,6 @@ function App() {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     
-    // Update URL hash
     if (page === 'home') {
       window.history.pushState(null, '', '/');
     } else {
@@ -32,14 +31,12 @@ function App() {
   useEffect(() => {
     if (currentPage === 'intro' || currentPage === 'home') {
       setIsNavVisible(false);
-    } else if (currentPage === 'dashboard' || currentPage === 'teacher-dashboard') {
-      setIsNavVisible(true);
     } else {
       setIsNavVisible(true);
     }
   }, [currentPage]);
 
-  // Handle URL hash on load - go directly to dashboard if hash exists
+  // Handle URL hash on load
   useEffect(() => {
     const hash = window.location.hash;
     if (hash) {
@@ -70,6 +67,10 @@ function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  const handleIntroComplete = () => {
+    setCurrentPage('home');
+  };
+
   // Page transition variants
   const pageVariants = {
     initial: { opacity: 0, y: 20 },
@@ -77,43 +78,53 @@ function App() {
     exit: { opacity: 0, y: -20 },
   };
 
-  const handleIntroComplete = () => {
-    setCurrentPage('home');
-  };
-
   const renderPage = () => {
     switch (currentPage) {
       case 'intro':
-        return <IntroScreen key="intro" onComplete={handleIntroComplete} />;
+        return (
+          <motion.div key="intro">
+            <IntroScreen onComplete={handleIntroComplete} />
+          </motion.div>
+        );
         
       case 'home':
-      case 'dashboard':
-      case 'teacher-dashboard':
+        // Only show StartPage - no HeroSection underneath
         return (
           <motion.div
-            key="home-dashboard"
+            key="home"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="fixed inset-0 z-50"
+          >
+            <StartPage onPageChange={handlePageChange} />
+          </motion.div>
+        );
+        
+      case 'dashboard':
+        return (
+          <motion.div
+            key="dashboard"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
           >
-            {currentPage === 'teacher-dashboard' ? (
-              <TeacherDashboard onPageChange={handlePageChange} />
-            ) : currentPage === 'dashboard' ? (
-              <HeroSection onPageChange={handlePageChange} />
-            ) : (
-              // When on 'home' (startpage), render both dashboard and startpage
-              <>
-                <HeroSection onPageChange={handlePageChange} />
-                <motion.div
-                  initial={{ opacity: 1 }}
-                  exit={{ opacity: 0, transition: { duration: 0.3 } }}
-                  className="fixed inset-0 z-50"
-                >
-                  <StartPage onPageChange={handlePageChange} />
-                </motion.div>
-              </>
-            )}
+            <HeroSection onPageChange={handlePageChange} />
+          </motion.div>
+        );
+        
+      case 'teacher-dashboard':
+        return (
+          <motion.div
+            key="teacher-dashboard"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <TeacherDashboard onPageChange={handlePageChange} />
           </motion.div>
         );
         
@@ -160,7 +171,11 @@ function App() {
         );
         
       default:
-        return <IntroScreen key="intro" onComplete={handleIntroComplete} />;
+        return (
+          <motion.div key="intro">
+            <IntroScreen onComplete={handleIntroComplete} />
+          </motion.div>
+        );
     }
   };
 

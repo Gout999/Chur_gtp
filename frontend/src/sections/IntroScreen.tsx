@@ -47,7 +47,7 @@ export default function IntroScreen({ onComplete }: IntroScreenProps) {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.8, ease: 'easeOut' }}
           >
-            <h1 className="text-6xl md:text-8xl lg:text-9xl font-normal tracking-[0.2em] text-gray-900">
+            <h1 className="text-6xl md:text-8xl lg:text-9xl font-bold tracking-[0.15em] text-gray-900">
               CHUR-GPT
             </h1>
           </motion.div>
