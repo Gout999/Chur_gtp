@@ -3,6 +3,9 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+load_dotenv()  # 加载 .env 到 os.environ，否则 pytest 等场景下读不到
 _ENV = os.environ
 PROJECT_ROOT = Path(__file__).resolve().parent
 
@@ -21,6 +24,8 @@ def _env_int(name: str, default: int) -> int:
 class Settings:
     openai_api_key: str
     anthropic_api_key: str
+    minimax_api_key: str
+    minimax_group_id: str
     database_url: str
     redis_url: str
     chroma_host: str
@@ -29,12 +34,15 @@ class Settings:
     log_level: str
     secret_key: str
     github_token: str
+    exa_api_key: str
     project_root: Path
 
 
 SETTINGS = Settings(
     openai_api_key=_ENV.get("OPENAI_API_KEY", ""),
     anthropic_api_key=_ENV.get("ANTHROPIC_API_KEY", ""),
+    minimax_api_key=_ENV.get("MINIMAX_API_KEY", ""),
+    minimax_group_id=_ENV.get("MINIMAX_GROUP_ID", ""),
     database_url=_ENV.get("DATABASE_URL", "postgresql://user:password@localhost:5432/eduguide"),
     redis_url=_ENV.get("REDIS_URL", "redis://localhost:6379/0"),
     chroma_host=_ENV.get("CHROMA_HOST", "localhost"),
@@ -43,12 +51,15 @@ SETTINGS = Settings(
     log_level=_ENV.get("LOG_LEVEL", "INFO"),
     secret_key=_ENV.get("SECRET_KEY", "change-me"),
     github_token=_ENV.get("GITHUB_TOKEN", ""),
+    exa_api_key=_ENV.get("EXA_API_KEY", ""),
     project_root=PROJECT_ROOT,
 )
 
 # Backward-compatible module-level constants.
 OPENAI_API_KEY = SETTINGS.openai_api_key
 ANTHROPIC_API_KEY = SETTINGS.anthropic_api_key
+MINIMAX_API_KEY = SETTINGS.minimax_api_key
+MINIMAX_GROUP_ID = SETTINGS.minimax_group_id
 DATABASE_URL = SETTINGS.database_url
 REDIS_URL = SETTINGS.redis_url
 CHROMA_HOST = SETTINGS.chroma_host
@@ -57,3 +68,4 @@ APP_ENV = SETTINGS.app_env
 LOG_LEVEL = SETTINGS.log_level
 SECRET_KEY = SETTINGS.secret_key
 GITHUB_TOKEN = SETTINGS.github_token
+EXA_API_KEY = SETTINGS.exa_api_key
