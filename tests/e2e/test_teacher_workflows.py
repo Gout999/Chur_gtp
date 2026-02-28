@@ -18,10 +18,9 @@ def test_teacher_material_lifecycle_workflow() -> None:
 
     upload = client.post(
         "/api/v1/teacher/materials/upload",
-        json={
+        files={"file": ("workflow.pdf", b"%PDF-1.4 workflow test content", "application/pdf")},
+        data={
             "teacher_id": "teacher-e2e",
-            "file_name": "workflow.pdf",
-            "file_path": "/tmp/workflow.pdf",
             "source_type": "teacher_upload",
         },
         headers=AUTH_HEADERS,

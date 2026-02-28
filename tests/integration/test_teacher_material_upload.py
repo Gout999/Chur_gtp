@@ -12,17 +12,19 @@ def _data(response):
     return body["data"]
 
 
-def _upload_material(client: TestClient) -> str:
-    payload = {
-        "teacher_id": "teacher-001",
-        "file_name": "chapter-1.pdf",
-        "file_path": "/tmp/chapter-1.pdf",
-        "class_id": "class-a",
-        "source_type": "teacher_upload",
-        "content_type": "application/pdf",
-        "tags": ["algebra", "grade8"],
-    }
-    response = client.post("/api/v1/teacher/materials/upload", json=payload, headers=AUTH_HEADERS)
+def _upload_material(client: TestClient, file_name: str = "chapter-1.pdf") -> str:
+    file_content = b"%PDF-1.4 fake content for testing"
+    response = client.post(
+        "/api/v1/teacher/materials/upload",
+        files={"file": (file_name, file_content, "application/pdf")},
+        data={
+            "teacher_id": "teacher-001",
+            "class_id": "class-a",
+            "source_type": "teacher_upload",
+            "tags": "algebra,grade8",
+        },
+        headers=AUTH_HEADERS,
+    )
     assert response.status_code == 200
     return _data(response)["material_id"]
 
@@ -46,6 +48,49 @@ def test_teacher_material_upload_persists_to_shared_memory() -> None:
     assert memory_entry["value"]["teacher_id"] == "teacher-001"
     assert memory_entry["value"]["file_name"] == "chapter-1.pdf"
     assert memory_entry["value"]["status"] == "queued"
+    assert memory_entry["value"]["observed_by_architect"] is False
+    assert memory_entry["value"]["file_size"] > 0
+    assert "file_path" in memory_entry["value"]
+
+
+def test_teacher_material_upload_returns_file_metadata() -> None:
+    client = TestClient(app)
+    file_content = b"%PDF-1.4 fake content"
+    response = client.post(
+        "/api/v1/teacher/materials/upload",
+        files={"file": ("test.pdf", file_content, "application/pdf")},
+        data={"teacher_id": "teacher-001"},
+        headers=AUTH_HEADERS,
+    )
+    assert response.status_code == 200
+    data = _data(response)
+    assert data["file_name"] == "test.pdf"
+    assert data["file_size"] == len(file_content)
+    assert data["content_type"] == "application/pdf"
+
+
+def test_teacher_material_upload_rejects_unsupported_format() -> None:
+    client = TestClient(app)
+    response = client.post(
+        "/api/v1/teacher/materials/upload",
+        files={"file": ("virus.exe", b"bad content", "application/octet-stream")},
+        data={"teacher_id": "teacher-001"},
+        headers=AUTH_HEADERS,
+    )
+    assert response.status_code == 400
+    assert "unsupported_file_type" in response.json()["error"]["detail"]
+
+
+def test_teacher_material_upload_rejects_empty_file() -> None:
+    client = TestClient(app)
+    response = client.post(
+        "/api/v1/teacher/materials/upload",
+        files={"file": ("empty.pdf", b"", "application/pdf")},
+        data={"teacher_id": "teacher-001"},
+        headers=AUTH_HEADERS,
+    )
+    assert response.status_code == 400
+    assert "file_empty" in response.json()["error"]["detail"]
 
 
 def test_teacher_material_status_unknown_returns_404() -> None:
@@ -121,7 +166,6 @@ def test_teacher_material_delete_is_idempotent_and_hides_status() -> None:
     client = TestClient(app)
     material_id = _upload_material(client)
 
-    # Seed related records to verify cleanup marking.
     client.put(
         f"/api/v1/teacher/materials/{material_id}/boundary",
         json={"strictness": "moderate"},

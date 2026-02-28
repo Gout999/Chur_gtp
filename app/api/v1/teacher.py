@@ -2,10 +2,11 @@
 import json
 import os
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Dict, List, Literal, Optional
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
@@ -13,6 +14,10 @@ from app.core.auth import require_bearer_token
 from app.services.llm_service import generate_lesson_plan_content
 from app.services.ppt_generator import generate_ppt_from_lesson_plan, get_slide_count
 from memory.shared import shared_memory
+
+ALLOWED_EXTENSIONS = {".pdf", ".docx", ".doc", ".pptx", ".ppt", ".txt", ".md", ".markdown"}
+MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024  # 50 MB
+UPLOAD_DIR = Path("uploads/materials")
 
 router = APIRouter(dependencies=[Depends(require_bearer_token)])
 
@@ -26,18 +31,11 @@ def _utc_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-class TeacherMaterialUploadRequest(BaseModel):
-    teacher_id: str = Field(min_length=1)
-    file_name: str = Field(min_length=1)
-    file_path: str = Field(min_length=1)
-    class_id: Optional[str] = None
-    source_type: Literal["teacher_upload", "reference", "supplementary"] = "teacher_upload"
-    content_type: Optional[str] = None
-    tags: List[str] = Field(default_factory=list)
-
-
 class TeacherMaterialUploadResponse(BaseModel):
     material_id: str
+    file_name: str
+    file_size: int
+    content_type: str
     status: Literal["queued"]
     stored_at: str
 
@@ -357,9 +355,59 @@ def _get_active_material_or_404(material_id: str) -> Dict[str, str]:
     return value
 
 
+def _infer_content_type(ext: str) -> str:
+    return {
+        ".pdf": "application/pdf",
+        ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ".doc": "application/msword",
+        ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        ".ppt": "application/vnd.ms-powerpoint",
+        ".txt": "text/plain",
+        ".md": "text/markdown",
+        ".markdown": "text/markdown",
+    }.get(ext, "application/octet-stream")
+
+
 @router.post("/materials/upload", response_model=TeacherMaterialUploadResponse)
-def upload_teacher_material(payload: TeacherMaterialUploadRequest) -> TeacherMaterialUploadResponse:
+async def upload_teacher_material(
+    file: UploadFile = File(..., description="教材文件 (PDF/DOCX/PPT/TXT/MD)"),
+    teacher_id: str = Form(..., min_length=1),
+    class_id: Optional[str] = Form(None),
+    source_type: str = Form("teacher_upload"),
+    tags: str = Form(""),
+    grade_level: Optional[str] = Form(None),
+    subject: Optional[str] = Form(None),
+    boundary_strictness: str = Form("moderate"),
+    teacher_notes: Optional[str] = Form(None),
+) -> TeacherMaterialUploadResponse:
+    file_name = file.filename or "unknown"
+    ext = Path(file_name).suffix.lower()
+
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"unsupported_file_type: {ext}. Allowed: {', '.join(sorted(ALLOWED_EXTENSIONS))}",
+        )
+
+    content = await file.read()
+    file_size = len(content)
+
+    if file_size == 0:
+        raise HTTPException(status_code=400, detail="file_empty")
+    if file_size > MAX_FILE_SIZE_BYTES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"file_too_large: {file_size} bytes exceeds {MAX_FILE_SIZE_BYTES} limit",
+        )
+
     material_id = f"mat_{uuid4().hex[:12]}"
+    material_dir = UPLOAD_DIR / material_id
+    material_dir.mkdir(parents=True, exist_ok=True)
+    saved_path = material_dir / file_name
+    saved_path.write_bytes(content)
+
+    content_type = file.content_type or _infer_content_type(ext)
+    tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else []
     now = _utc_iso()
 
     shared_memory.write(
@@ -367,20 +415,29 @@ def upload_teacher_material(payload: TeacherMaterialUploadRequest) -> TeacherMat
         material_id,
         {
             "material_id": material_id,
-            "teacher_id": payload.teacher_id,
-            "class_id": payload.class_id,
-            "file_name": payload.file_name,
-            "file_path": payload.file_path,
-            "source_type": payload.source_type,
-            "content_type": payload.content_type,
-            "tags": payload.tags,
+            "teacher_id": teacher_id,
+            "class_id": class_id,
+            "file_name": file_name,
+            "file_path": str(saved_path),
+            "file_size": file_size,
+            "source_type": source_type,
+            "content_type": content_type,
+            "tags": tag_list,
+            "grade_level": grade_level,
+            "subject": subject,
+            "boundary_strictness": boundary_strictness,
+            "teacher_notes": teacher_notes,
             "status": "queued",
             "created_at": now,
+            "observed_by_architect": False,
         },
     )
 
     return TeacherMaterialUploadResponse(
         material_id=material_id,
+        file_name=file_name,
+        file_size=file_size,
+        content_type=content_type,
         status="queued",
         stored_at=now,
     )
@@ -911,17 +968,66 @@ def _get_active_lesson_plan_or_404(plan_id: str) -> Dict[str, object]:
     return value
 
 
+def _build_material_context(material_ids: List[str]) -> str:
+    """Read uploaded material metadata + knowledge graph from shared memory."""
+    if not material_ids:
+        return ""
+
+    parts: List[str] = []
+    for mid in material_ids:
+        upload = shared_memory.read("teacher_uploads", mid)
+        if not upload:
+            continue
+        val = upload.get("value", {})
+        info = f"教材: {val.get('file_name', mid)}"
+        if val.get("tags"):
+            info += f"  标签: {', '.join(val['tags'])}"
+        if val.get("subject"):
+            info += f"  科目: {val['subject']}"
+        if val.get("grade_level"):
+            info += f"  年级: {val['grade_level']}"
+        if val.get("boundary_strictness"):
+            info += f"  知识边界: {val['boundary_strictness']}"
+        if val.get("teacher_notes"):
+            info += f"\n  教师备注: {val['teacher_notes']}"
+        parts.append(info)
+
+        authority = shared_memory.read("teacher_authority_graph", mid)
+        if authority:
+            auth_val = authority.get("value", {})
+            material_data = auth_val.get("latest_material", {})
+            nodes = material_data.get("knowledge_nodes", [])
+            if nodes:
+                node_titles = [n.get("title", "") for n in nodes if n.get("title")]
+                parts.append(f"  知识节点: {', '.join(node_titles)}")
+            boundary_data = auth_val.get("latest_boundary", {})
+            if boundary_data.get("scope_level"):
+                parts.append(f"  知识范围: {boundary_data['scope_level']}")
+
+        importance = shared_memory.read("teacher_importance_marks", mid)
+        if importance:
+            marks = importance.get("value", {}).get("marks", [])
+            if marks:
+                high_marks = [m["concept"] for m in marks if m.get("level") == "high"]
+                if high_marks:
+                    parts.append(f"  重点概念: {', '.join(high_marks)}")
+
+    return "\n".join(parts)
+
+
 @router.post("/lesson-plans/generate", response_model=LessonPlanResponse)
 def generate_lesson_plan(payload: LessonPlanGenerateRequest) -> LessonPlanResponse:
     plan_id = f"plan_{uuid4().hex[:12]}"
     now = _utc_iso()
 
-    # AI生成教案内容
+    material_context = _build_material_context(payload.material_ids)
+
     sections_data = generate_lesson_plan_content(
         title=payload.title,
         objective=payload.objective,
         material_ids=payload.material_ids,
-        topics=payload.topics
+        topics=payload.topics,
+        material_context=material_context,
     )
 
     # 转换为Pydantic模型
@@ -954,7 +1060,7 @@ def generate_lesson_plan(payload: LessonPlanGenerateRequest) -> LessonPlanRespon
             "updated_at": now,
             "deleted": False,
             "ai_generated": True,
-            "ai_model": "claude-3-haiku-20240307",
+            "ai_model": "MiniMax-M2.5",
             "generated_at": now,
             "edited_by_teacher": False,
         },
@@ -1101,9 +1207,12 @@ def generate_lesson_ppt(plan_id: str, payload: LessonPptGenerateRequest) -> Less
             "title": plan.get("title"),
         },
     )
+    if status == "failed":
+        raise HTTPException(status_code=500, detail="ppt_generation_failed")
+
     return LessonPptGenerateResponse(
         ppt_id=ppt_id,
-        status="completed",
+        status=status,
         poll_url=f"/api/v1/teacher/ppt/{ppt_id}/status",
     )
 

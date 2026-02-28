@@ -1,19 +1,24 @@
-"""LLM service for AI lesson plan generation."""
+"""LLM service for AI lesson plan generation via MiniMax (Anthropic-compatible SDK)."""
 import json
 from typing import List, Dict, Any
+
 from anthropic import Anthropic
 from config import SETTINGS
 
-# Initialize Anthropic client
+_MINIMAX_MODEL = "MiniMax-M2.5"
+
 _client = None
 
 
 def get_client() -> Anthropic:
     global _client
     if _client is None:
-        if not SETTINGS.anthropic_api_key:
-            raise ValueError("ANTHROPIC_API_KEY not configured")
-        _client = Anthropic(api_key=SETTINGS.anthropic_api_key)
+        if not SETTINGS.minimax_api_key:
+            raise ValueError("MINIMAX_API_KEY not configured")
+        _client = Anthropic(
+            api_key=SETTINGS.minimax_api_key,
+            base_url=SETTINGS.minimax_base_url,
+        )
     return _client
 
 
@@ -21,43 +26,50 @@ def generate_lesson_plan_content(
     title: str,
     objective: str,
     material_ids: List[str],
-    topics: List[str]
+    topics: List[str],
+    material_context: str = "",
 ) -> List[Dict[str, Any]]:
-    """Generate lesson plan sections using Claude."""
+    """Generate lesson plan sections using MiniMax-M2.5."""
     client = get_client()
 
     topics_str = ", ".join(topics) if topics else "根据教学目标自动生成"
-    materials_str = ", ".join(material_ids) if material_ids else "未指定"
+
+    material_block = ""
+    if material_context:
+        material_block = f"""
+以下是教师上传的教材解析结果，请务必基于这些内容来设计教学活动：
+---
+{material_context}
+---
+"""
 
     prompt = f"""作为资深教师，请为以下课程生成详细教案：
 
 课程标题：{title}
 教学目标：{objective}
-关联教材：{materials_str}
 主题：{topics_str}
-
+{material_block}
 请生成4-6个教学阶段，总时长45分钟。每个阶段包含：
 - title: 阶段标题（简短，5-10字）
 - duration_minutes: 时长（分钟）
-- activity: 具体教学活动描述（50-100字）
-- teaching_method: 教学方法（如：讲授法、讨论法、练习法）
+- activity: 具体教学活动描述（50-100字），必须引用教材中的具体知识点、例题或概念
+- teaching_method: 教学方法（如：讲授法、讨论法、练习法、苏格拉底式提问）
 - expected_outcome: 预期学习成果（30-50字）
 
 请以JSON数组格式返回：
 [{{"title": "...", "duration_minutes": 10, "activity": "...", "teaching_method": "...", "expected_outcome": "..."}}]
 
-确保内容紧密围绕教学目标和主题，不要返回通用模板。"""
+确保内容紧密围绕教学目标和教材内容，不要返回通用模板。"""
 
     try:
         response = client.messages.create(
-            model="claude-3-haiku-20240307",
+            model=_MINIMAX_MODEL,
             max_tokens=2000,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
         )
 
         content = response.content[0].text
-        # Extract JSON from response
         json_start = content.find("[")
         json_end = content.rfind("]") + 1
         if json_start >= 0 and json_end > json_start:
@@ -65,7 +77,6 @@ def generate_lesson_plan_content(
             sections = json.loads(json_str)
             return sections
         else:
-            # Fallback: return default if parsing fails
             return _get_default_sections(topics)
     except Exception as e:
         print(f"LLM generation failed: {e}")
