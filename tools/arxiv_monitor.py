@@ -2,13 +2,13 @@
 arXiv monitor: search and score relevance for student interests.
 PRD §5.1, §6.4; Phase 4 (Engineer C).
 - 对接 arXiv API；按兴趣关键词搜索近期论文；
-- 相关性计算（关键词匹配，可选扩展 embedding）；
+- 相关性计算（关键词匹配；可选 LLM 语义相关性）；
 - 返回 monitor_id、论文列表、高相关数量等；
 - 接口可被节点与定时任务直接调用。
 - 检索关键词需为英文（用户上传文件为 English version）。
 """
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Literal
+from typing import Any, Dict, List, Literal, Optional
 from uuid import uuid4
 
 import arxiv
@@ -116,6 +116,8 @@ def monitor_arxiv_domain(
     check_frequency: Literal["daily", "weekly"] = "daily",
     relevance_threshold: float = 0.7,
     max_results: int = 20,
+    interest_signals: Optional[Dict[str, Any]] = None,
+    use_llm_relevance: bool = True,
 ) -> Dict[str, Any]:
     """
     Curiosity Catalyst 调用此工具执行 arXiv 监控（立即执行一次搜索）。
@@ -129,6 +131,8 @@ def monitor_arxiv_domain(
         check_frequency: 检查频率，用于决定取近期 1 天或 7 天的论文。
         relevance_threshold: 高相关阈值，>= 此分数的论文计入 high_relevance_count 并进入 top_papers。
         max_results: 向 arXiv 请求的最大结果数。
+        interest_signals: 完整兴趣信号（含 keywords, research_directions）用于 LLM 相关性判断。
+        use_llm_relevance: 若 True 且 interest_signals 提供，对论文做 LLM 语义相关性评分。
 
     Returns:
         monitor_id: 本次监控任务 ID；
@@ -145,6 +149,22 @@ def monitor_arxiv_domain(
         max_results=max_results,
         date_range_days=date_range_days,
     )
+
+    # 可选：LLM 语义相关性重算
+    if use_llm_relevance and interest_signals and recent_papers:
+        try:
+            from agents.catalyst.llm import score_relevance_batch
+            llm_scores = score_relevance_batch(
+                recent_papers, interest_signals, max_papers=min(15, len(recent_papers))
+            )
+            for i, p in enumerate(recent_papers):
+                if i < len(llm_scores):
+                    p["relevance_score"] = round(llm_scores[i], 4)
+            recent_papers = sorted(recent_papers, key=lambda x: x.get("relevance_score", 0), reverse=True)
+        except Exception as e:
+            import logging
+            logging.getLogger("eduguide.tools").warning("LLM relevance fallback: %s", e)
+
     high_relevance = [
         p for p in recent_papers
         if p.get("relevance_score", 0) >= relevance_threshold
