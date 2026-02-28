@@ -4,6 +4,7 @@ import Navbar from '@/components/Navbar';
 import HeroSection from '@/sections/HeroSection';
 import TeacherDashboard from '@/sections/TeacherDashboard';
 import StartPage from '@/sections/StartPage';
+import IntroScreen from '@/sections/IntroScreen';
 import RevisionPage from '@/sections/RevisionPage';
 import HomeworkPage from '@/sections/HomeworkPage';
 import MistakesPage from '@/sections/MistakesPage';
@@ -11,7 +12,7 @@ import type { PageType } from '@/types';
 import './App.css';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<PageType>('home');
+  const [currentPage, setCurrentPage] = useState<PageType>('intro');
   const [isNavVisible, setIsNavVisible] = useState(true);
 
   // Handle page change
@@ -29,7 +30,7 @@ function App() {
 
   // Handle navbar visibility
   useEffect(() => {
-    if (currentPage === 'home') {
+    if (currentPage === 'intro' || currentPage === 'home') {
       setIsNavVisible(false);
     } else if (currentPage === 'dashboard' || currentPage === 'teacher-dashboard') {
       setIsNavVisible(true);
@@ -38,7 +39,7 @@ function App() {
     }
   }, [currentPage]);
 
-  // Handle URL hash on load
+  // Handle URL hash on load - go directly to dashboard if hash exists
   useEffect(() => {
     const hash = window.location.hash;
     if (hash) {
@@ -76,8 +77,15 @@ function App() {
     exit: { opacity: 0, y: -20 },
   };
 
+  const handleIntroComplete = () => {
+    setCurrentPage('home');
+  };
+
   const renderPage = () => {
     switch (currentPage) {
+      case 'intro':
+        return <IntroScreen key="intro" onComplete={handleIntroComplete} />;
+        
       case 'home':
       case 'dashboard':
       case 'teacher-dashboard':
@@ -91,20 +99,24 @@ function App() {
           >
             {currentPage === 'teacher-dashboard' ? (
               <TeacherDashboard onPageChange={handlePageChange} />
-            ) : (
+            ) : currentPage === 'dashboard' ? (
               <HeroSection onPageChange={handlePageChange} />
-            )}
-            {currentPage === 'home' && (
-              <motion.div
-                initial={{ opacity: 1 }}
-                exit={{ opacity: 0, transition: { duration: 0.3 } }}
-                className="fixed inset-0 z-50"
-              >
-                <StartPage onPageChange={handlePageChange} />
-              </motion.div>
+            ) : (
+              // When on 'home' (startpage), render both dashboard and startpage
+              <>
+                <HeroSection onPageChange={handlePageChange} />
+                <motion.div
+                  initial={{ opacity: 1 }}
+                  exit={{ opacity: 0, transition: { duration: 0.3 } }}
+                  className="fixed inset-0 z-50"
+                >
+                  <StartPage onPageChange={handlePageChange} />
+                </motion.div>
+              </>
             )}
           </motion.div>
         );
+        
       case 'revision':
         return (
           <motion.div
@@ -118,6 +130,7 @@ function App() {
             <RevisionPage onPageChange={handlePageChange} />
           </motion.div>
         );
+        
       case 'homework':
         return (
           <motion.div
@@ -131,6 +144,7 @@ function App() {
             <HomeworkPage onPageChange={handlePageChange} />
           </motion.div>
         );
+        
       case 'mistakes':
         return (
           <motion.div
@@ -144,14 +158,15 @@ function App() {
             <MistakesPage onPageChange={handlePageChange} />
           </motion.div>
         );
+        
       default:
-        return null;
+        return <IntroScreen key="intro" onComplete={handleIntroComplete} />;
     }
   };
 
   return (
     <div className="min-h-screen bg-white">
-      {currentPage !== 'home' && (
+      {currentPage !== 'intro' && currentPage !== 'home' && (
         <Navbar
           currentPage={currentPage}
           onPageChange={handlePageChange}
