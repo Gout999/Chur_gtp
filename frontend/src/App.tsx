@@ -93,30 +93,28 @@ function App() {
   const renderPage = () => {
     switch (currentPage) {
       
-      case 'home':
-        return (
-          <motion.div
-            key="home"
-            variants={pageVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={{ duration: 0.5 }}
-          >
-            <StartPage onPageChange={handlePageChange} />
-          </motion.div>
-        );
+            case 'home':
       case 'dashboard':
         return (
           <motion.div
-            key="dashboard"
-            variants={pageVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
+            key="home-dashboard"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
           >
             <HeroSection onPageChange={handlePageChange} />
+            <AnimatePresence>
+              {currentPage === 'home' && (
+                <motion.div
+                  key="startpage"
+                  exit={{ opacity: 0, transition: { duration: 0.8 } }}
+                  className="fixed inset-0 z-50"
+                >
+                  <StartPage onPageChange={handlePageChange} />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         );
       case 'revision':

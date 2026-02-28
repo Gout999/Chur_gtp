@@ -281,7 +281,10 @@ export default function StartPage({ onPageChange }: StartPageProps) {
   }
 
   return (
-    <div className="startpage-root app" ref={containerRef}>
+    <div className="startpage-root app" ref={containerRef} style={transitionPhase === 'circleExpand' || transitionPhase === 'complete' ? { 
+    maskImage: `radial-gradient(circle at center, transparent 0%, transparent ${circleScale}vmax, black ${circleScale + 0.1}vmax, black 100%)`,
+    WebkitMaskImage: `radial-gradient(circle at center, transparent 0%, transparent ${circleScale}vmax, black ${circleScale + 0.1}vmax, black 100%)`
+  } : {}}>
       {/* 3D Scene Container */}
       <div className="scene-container">
         {/* Header */}
@@ -358,15 +361,7 @@ export default function StartPage({ onPageChange }: StartPageProps) {
         </div>
       )}
 
-      {/* Expanding Circle */}
-      {transitionPhase === 'circleExpand' && (
-        <div 
-          className="expanding-circle"
-          style={{ 
-            transform: `scale(${circleScale})`,
-          }}
-        />
-      )}
+
     </div>
   )
 }
