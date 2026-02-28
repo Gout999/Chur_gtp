@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Lightbulb, Sparkles, FileText, Clock, Calculator, FlaskConical, BookOpen, Upload, X, CheckCircle, Trash2 } from 'lucide-react';
+import { ArrowRight, Lightbulb, Sparkles, FileText, Clock, Calculator, FlaskConical, BookOpen, Upload, X, CheckCircle, Trash2, AlertCircle, Target } from 'lucide-react';
 import type { PageType } from '@/types';
 import './RevisionPage.css';
+
 
 interface RevisionPageProps {
   onPageChange: (_page: PageType) => void;
@@ -87,6 +88,37 @@ const dailyPapers: Note[] = [
   },
 ];
 
+const recentMistakes = [
+  {
+    id: 1,
+    question: 'Solve for x: 2x² + 5x - 3 = 0',
+    yourAnswer: 'x = 1, x = -3',
+    correctAnswer: 'x = 0.5, x = -3',
+    subject: 'Mathematics',
+    date: '2025-02-28',
+    status: 'reviewed'
+  },
+  {
+    id: 2,
+    question: 'What is the powerhouse of the cell?',
+    yourAnswer: 'Nucleus',
+    correctAnswer: 'Mitochondria',
+    subject: 'Science',
+    date: '2025-02-27',
+    status: 'reviewed'
+  },
+  {
+    id: 3,
+    question: 'Explain the process of photosynthesis',
+    yourAnswer: 'Plants absorb sunlight...',
+    correctAnswer: 'Plants convert light energy...',
+    subject: 'Science',
+    date: '2025-02-26',
+    status: 'pending'
+  },
+];
+
+
 export default function RevisionPage({ onPageChange }: RevisionPageProps) {
   const [notes, setNotes] = useState<Note[]>(defaultNotes);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -94,7 +126,7 @@ export default function RevisionPage({ onPageChange }: RevisionPageProps) {
   const [noteTitle, setNoteTitle] = useState('');
   const [noteSubject, setNoteSubject] = useState('Math');
   const [noteDescription, setNoteDescription] = useState('');
-  const [activeTab, setActiveTab] = useState<'all' | 'collected' | 'papers'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'collected' | 'papers' | 'mistakes'>('all');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load saved notes from localStorage on mount
@@ -157,6 +189,7 @@ export default function RevisionPage({ onPageChange }: RevisionPageProps) {
     : activeTab === 'collected'
     ? notes.filter(n => n.isCustom)
     : dailyPapers;
+
 
   return (
     <motion.div
@@ -236,21 +269,24 @@ export default function RevisionPage({ onPageChange }: RevisionPageProps) {
                 My Collection ({notes.filter(n => n.isCustom).length})
               </button>
               <button
-                onClick={() => setActiveTab('papers')}
+                onClick={() => setActiveTab('mistakes')}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                  activeTab === 'papers' 
-                    ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white' 
+                  activeTab === 'mistakes' 
+                    ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white' 
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
-                <Sparkles size={14} />
-                Daily Recommendation
-                <span className="ml-1 px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full">{dailyPapers.length}</span>
+                <AlertCircle size={14} />
+                Mistakes
+                <span className="ml-1 px-1.5 py-0.5 bg-white text-red-500 text-xs rounded-full">{recentMistakes.length}</span>
               </button>
+
+
             </div>
           </div>
 
           {/* Notes Grid */}
+          {activeTab !== 'mistakes' && (
           <div className="notes-grid">
             {displayedNotes.map((note, index) => {
               const SubjectIcon = subjectIcons[note.subject] || FileText;
@@ -328,6 +364,82 @@ export default function RevisionPage({ onPageChange }: RevisionPageProps) {
               );
             })}
           </div>
+          )}
+
+          {/* Mistakes Section */}
+          {activeTab === 'mistakes' && (
+            <div className="mistakes-section">
+              {/* Progress Hero */}
+              <motion.div
+                className="hero-card mb-8"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <div className="hero-icon">
+                  <Target size={32} />
+                </div>
+                <div className="hero-text">
+                  <h2>Your Mistakes</h2>
+                  <p>Track and review your errors to improve learning</p>
+                </div>
+                <div className="hero-stats">
+                  <div className="hero-stat">
+                    <span className="stat-num">{recentMistakes.filter(m => m.status === 'reviewed').length}</span>
+                    <span className="stat-label">Reviewed</span>
+                  </div>
+                  <div className="hero-stat">
+                    <span className="stat-num">{recentMistakes.filter(m => m.status === 'pending').length}</span>
+                    <span className="stat-label">Pending</span>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Mistakes List */}
+              <div className="mistakes-list">
+                {recentMistakes.map((mistake, index) => (
+                  <motion.div
+                    key={mistake.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.1 + index * 0.1 }}
+                    className="mistake-item bg-white rounded-xl p-6 mb-4 shadow-sm border border-gray-100"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="mt-1">
+                        {mistake.status === 'reviewed' ? (
+                          <CheckCircle className="text-green-500" size={20} />
+                        ) : (
+                          <AlertCircle className="text-orange-500" size={20} />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 mb-2">{mistake.question}</h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-500">Your answer:</span>
+                            <span className="text-red-600 line-through">{mistake.yourAnswer}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-500">Correct:</span>
+                            <span className="text-green-600 font-medium">{mistake.correctAnswer}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">
+                          <span>{mistake.subject}</span>
+                          <span>{mistake.date}</span>
+                        </div>
+                      </div>
+                      <button className="px-4 py-2 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-800 transition-colors">
+                        {mistake.status === 'reviewed' ? 'Review Again' : 'Review'}
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
+
         </section>
       </main>
 

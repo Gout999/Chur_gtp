@@ -27,7 +27,13 @@ export default function Navbar({ currentPage, onPageChange, isVisible }: NavbarP
         { label: 'Analytics', page: 'teacher-analytics' as PageType },
       ];
     } else {
-      // Student Navigation: Home, Revision, Assignments, Mistakes
+      // Student Navigation: Home, Revision, Assignments, Daily Recommendation
+      return [
+        { label: 'Home', page: 'home' as PageType },
+        { label: 'Revision', page: 'revision' as PageType },
+        { label: 'Assignments', page: 'assignments' as PageType },
+        { label: 'Daily Recommendation', page: 'daily-recommendation' as PageType },
+      ];
       return [
         { label: 'Home', page: 'home' as PageType },
         { label: 'Revision', page: 'revision' as PageType },
@@ -94,7 +100,7 @@ export default function Navbar({ currentPage, onPageChange, isVisible }: NavbarP
                 : 'text-white'
             }`}
           >
-            chur-gpt.
+
           </button>
 
           {/* Right CTA - Disabled */}
