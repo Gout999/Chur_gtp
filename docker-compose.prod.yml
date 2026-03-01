@@ -1,0 +1,74 @@
+version: "3.8"
+
+services:
+  # Backend API
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: churgpt-backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:${DB_PASSWORD:-postgres}@db:5432/churgpt
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - APP_ENV=production
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./uploads:/app/uploads
+    networks:
+      - churgpt-network
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: churgpt-frontend
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - VITE_API_URL=http://localhost:8000/api/v1
+    depends_on:
+      - backend
+    networks:
+      - churgpt-network
+
+  # Database
+  db:
+    image: postgres:16-alpine
+    container_name: churgpt-db
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
+      - POSTGRES_DB=churgpt
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - churgpt-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: churgpt-redis
+    restart: always
+    volumes:
+      - redis_data:/data
+    networks:
+      - churgpt-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  churgpt-network:
+    driver: bridge

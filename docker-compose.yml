@@ -6,31 +6,32 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/eduguide
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/churgpt
       - REDIS_URL=redis://redis:6379/0
-      - CHROMA_HOST=chroma
-      - CHROMA_PORT=8000
+      - SECRET_KEY=your-secret-key-change-in-production
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
     depends_on:
       - db
       - redis
-      - chroma
+    volumes:
+      - ./app:/app/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   db:
     image: postgres:16
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=eduguide
+      - POSTGRES_DB=churgpt
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
 
   redis:
     image: redis:7-alpine
-
-  chroma:
-    image: chromadb/chroma:latest
     ports:
-      - "8001:8000"
+      - "6379:6379"
 
 volumes:
   postgres_data:

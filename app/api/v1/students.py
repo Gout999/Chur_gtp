@@ -1,74 +1,538 @@
-"""Student endpoints."""
-from typing import Any, Dict, List
+"""Student API endpoints."""
+from typing import List, Dict, Any
+from datetime import datetime
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
 
-from fastapi import APIRouter
+from app.database import get_db
+from app.models import (
+    User, Class, ClassEnrollment, Material, Assignment, 
+    Submission, Mistake, StudentProfile
+)
+from app.schemas import (
+    ClassResponse, MaterialResponse, AssignmentResponse,
+    SubmissionCreate, SubmissionResponse, SubmissionUpdate,
+    MistakeCreate, MistakeResponse, MistakeUpdate, MistakeStats,
+    StudentDashboardStats
+)
+from app.core.security import get_current_student
 
-from memory.shared import shared_memory
-
-router = APIRouter()
+router = APIRouter(prefix="/students", tags=["Students"])
 
 
-@router.get("/{student_id}")
-def get_student(student_id: str) -> dict:
-    return {"student_id": student_id}
+# ==================== CLASSES ====================
+
+@router.get("/classes", response_model=List[ClassResponse])
+def get_student_classes(
+    current_user: User = Depends(get_current_student),
+    db: Session = Depends(get_db)
+):
+    """Get all classes the student is enrolled in."""
+    student_profile = current_user.student_profile
+    
+    if not student_profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student profile not found"
+        )
+    
+    enrollments = db.query(ClassEnrollment).filter(
+        ClassEnrollment.student_id == student_profile.id
+    ).all()
+    
+    class_ids = [e.class_id for e in enrollments]
+    classes = db.query(Class).filter(Class.id.in_(class_ids)).all()
+    
+    return classes
 
 
-@router.get("/{student_id}/hub")
-def get_student_hub(student_id: str) -> Dict[str, Any]:
-    """
-    Self-study Hub：返回该学生的兴趣画像与个性化推荐内容。
+@router.get("/classes/{class_id}", response_model=ClassResponse)
+def get_class(
+    class_id: int,
+    current_user: User = Depends(get_current_student),
+    db: Session = Depends(get_db)
+):
+    """Get a specific class the student is enrolled in."""
+    student_profile = current_user.student_profile
+    
+    # Verify enrollment
+    enrollment = db.query(ClassEnrollment).filter(
+        ClassEnrollment.class_id == class_id,
+        ClassEnrollment.student_id == student_profile.id
+    ).first()
+    
+    if not enrollment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Class not found or you are not enrolled"
+        )
+    
+    return enrollment.class_
 
-    读取 shared_memory 中 Catalyst 写入的 interest_signals 和
-    pending_validations，组装为学生端可消费的推荐列表。
-    """
-    interest_entry = shared_memory.read("interest_signals", student_id)
-    interest_profile: Dict[str, Any] = {}
-    if interest_entry:
-        value = interest_entry.get("value", {})
-        interest_profile = {
-            "keywords": value.get("keywords", []),
-            "research_directions": value.get("research_directions", []),
-            "tech_stack": value.get("tech_stack", []),
-            "confidence": value.get("confidence", 0.0),
-            "updated_at": value.get("updated_at", ""),
-        }
 
-    all_validations = shared_memory.read_all("pending_validations")
-    recommendations: List[Dict[str, Any]] = []
-    pending_count = 0
-    for entry in all_validations:
-        val = entry.get("value", {})
-        if val.get("student_id") != student_id:
-            continue
-        status = val.get("status", "pending")
-        briefing = val.get("briefing", {})
-        sources = val.get("sources", {})
+# ==================== MATERIALS ====================
 
-        if status in ("approved", "delivered"):
-            recommendations.append({
-                "briefing_id": briefing.get("briefing_id", ""),
-                "summary": briefing.get("summary", ""),
-                "personalized_content": briefing.get("personalized_content", ""),
-                "curriculum_bridge": briefing.get("curriculum_bridge", ""),
-                "suggested_action": briefing.get("suggested_action", ""),
-                "complexity_level": briefing.get("complexity_level", 0.0),
-                "status": status,
-                "submitted_at": val.get("submitted_at", ""),
-                "arxiv_papers": [
-                    p for p in sources.get("arxiv", {}).get("top_papers", [])
-                ],
-                "github_repos": [
-                    r for r in sources.get("github", {}).get("top_resources", [])
-                ],
-            })
-        elif status == "pending":
-            pending_count += 1
+@router.get("/materials", response_model=List[MaterialResponse])
+def get_student_materials(
+    subject: str = None,
+    current_user: User = Depends(get_current_student),
+    db: Session = Depends(get_db)
+):
+    """Get all materials for the student's enrolled classes."""
+    student_profile = current_user.student_profile
+    
+    # Get enrolled class IDs
+    enrollments = db.query(ClassEnrollment).filter(
+        ClassEnrollment.student_id == student_profile.id
+    ).all()
+    
+    class_ids = [e.class_id for e in enrollments]
+    
+    # Get materials
+    query = db.query(Material).filter(
+        Material.class_id.in_(class_ids)
+    )
+    
+    if subject:
+        query = query.filter(Material.subject == subject)
+    
+    materials = query.all()
+    
+    return materials
 
-    recommendations.sort(key=lambda r: r.get("submitted_at", ""), reverse=True)
 
-    return {
-        "student_id": student_id,
-        "interest_profile": interest_profile,
-        "recommendations": recommendations,
-        "pending_review_count": pending_count,
-    }
+@router.get("/materials/{material_id}", response_model=MaterialResponse)
+def get_material(
+    material_id: int,
+    current_user: User = Depends(get_current_student),
+    db: Session = Depends(get_db)
+):
+    """Get a specific material."""
+    student_profile = current_user.student_profile
+    
+    # Get enrolled class IDs
+    enrollments = db.query(ClassEnrollment).filter(
+        ClassEnrollment.student_id == student_profile.id
+    ).all()
+    
+    class_ids = [e.class_id for e in enrollments]
+    
+    material = db.query(Material).filter(
+        Material.id == material_id,
+        Material.class_id.in_(class_ids)
+    ).first()
+    
+    if not material:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Material not found"
+        )
+    
+    return material
+
+
+# ==================== ASSIGNMENTS ====================
+
+@router.get("/assignments", response_model=List[AssignmentResponse])
+def get_student_assignments(
+    status: str = None,
+    current_user: User = Depends(get_current_student),
+    db: Session = Depends(get_db)
+):
+    """Get all assignments for the student's enrolled classes."""
+    student_profile = current_user.student_profile
+    
+    # Get enrolled class IDs
+    enrollments = db.query(ClassEnrollment).filter(
+        ClassEnrollment.student_id == student_profile.id
+    ).all()
+    
+    class_ids = [e.class_id for e in enrollments]
+    
+    # Get assignments
+    query = db.query(Assignment).filter(
+        Assignment.class_id.in_(class_ids)
+    )
+    
+    assignments = query.all()
+    
+    return assignments
+
+
+@router.get("/assignments/{assignment_id}", response_model=AssignmentResponse)
+def get_assignment(
+    assignment_id: int,
+    current_user: User = Depends(get_current_student),
+    db: Session = Depends(get_db)
+):
+    """Get a specific assignment."""
+    student_profile = current_user.student_profile
+    
+    # Get enrolled class IDs
+    enrollments = db.query(ClassEnrollment).filter(
+        ClassEnrollment.student_id == student_profile.id
+    ).all()
+    
+    class_ids = [e.class_id for e in enrollments]
+    
+    assignment = db.query(Assignment).filter(
+        Assignment.id == assignment_id,
+        Assignment.class_id.in_(class_ids)
+    ).first()
+    
+    if not assignment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment not found"
+        )
+    
+    return assignment
+
+
+@router.post("/assignments/{assignment_id}/submissions", 
+             response_model=SubmissionResponse, 
+             status_code=status.HTTP_201_CREATED)
+def create_submission(
+    assignment_id: int,
+    submission_data: SubmissionCreate,
+    current_user: User = Depends(get_current_student),
+    db: Session = Depends(get_db)
+):
+    """Submit an assignment."""
+    student_profile = current_user.student_profile
+    
+    # Get enrolled class IDs
+    enrollments = db.query(ClassEnrollment).filter(
+        ClassEnrollment.student_id == student_profile.id
+    ).all()
+    
+    class_ids = [e.class_id for e in enrollments]
+    
+    # Verify assignment exists and belongs to enrolled class
+    assignment = db.query(Assignment).filter(
+        Assignment.id == assignment_id,
+        Assignment.class_id.in_(class_ids)
+    ).first()
+    
+    if not assignment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment not found"
+        )
+    
+    # Check if already submitted
+    existing = db.query(Submission).filter(
+        Submission.assignment_id == assignment_id,
+        Submission.student_id == student_profile.id
+    ).first()
+    
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You have already submitted this assignment"
+        )
+    
+    submission = Submission(
+        assignment_id=assignment_id,
+        student_id=student_profile.id,
+        content=submission_data.content,
+        status="submitted"
+    )
+    
+    db.add(submission)
+    db.commit()
+    db.refresh(submission)
+    
+    return submission
+
+
+@router.put("/assignments/{assignment_id}/submissions", response_model=SubmissionResponse)
+def update_submission(
+    assignment_id: int,
+    submission_data: SubmissionUpdate,
+    current_user: User = Depends(get_current_student),
+    db: Session = Depends(get_db)
+):
+    """Update a submission."""
+    student_profile = current_user.student_profile
+    
+    submission = db.query(Submission).filter(
+        Submission.assignment_id == assignment_id,
+        Submission.student_id == student_profile.id
+    ).first()
+    
+    if not submission:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Submission not found"
+        )
+    
+    if submission.status == "graded":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot update graded submission"
+        )
+    
+    update_data = submission_data.model_dump(exclude_unset=True)
+    
+    for field, value in update_data.items():
+        setattr(submission, field, value)
+    
+    db.commit()
+    db.refresh(submission)
+    
+    return submission
+
+
+@router.get("/submissions", response_model=List[SubmissionResponse])
+def get_my_submissions(
+    current_user: User = Depends(get_current_student),
+    db: Session = Depends(get_db)
+):
+    """Get all submissions by the current student."""
+    student_profile = current_user.student_profile
+    
+    submissions = db.query(Submission).filter(
+        Submission.student_id == student_profile.id
+    ).all()
+    
+    return submissions
+
+
+# ==================== MISTAKES ====================
+
+@router.get("/mistakes", response_model=List[MistakeResponse])
+def get_my_mistakes(
+    subject: str = None,
+    status: str = None,
+    current_user: User = Depends(get_current_student),
+    db: Session = Depends(get_db)
+):
+    """Get all mistakes for the current student."""
+    student_profile = current_user.student_profile
+    
+    query = db.query(Mistake).filter(
+        Mistake.student_id == student_profile.id
+    )
+    
+    if subject:
+        query = query.filter(Mistake.subject == subject)
+    
+    if status:
+        query = query.filter(Mistake.status == status)
+    
+    mistakes = query.order_by(Mistake.created_at.desc()).all()
+    
+    return mistakes
+
+
+@router.post("/mistakes", response_model=MistakeResponse, status_code=status.HTTP_201_CREATED)
+def create_mistake(
+    mistake_data: MistakeCreate,
+    current_user: User = Depends(get_current_student),
+    db: Session = Depends(get_db)
+):
+    """Record a new mistake."""
+    student_profile = current_user.student_profile
+    
+    mistake = Mistake(
+        student_id=student_profile.id,
+        subject=mistake_data.subject,
+        topic=mistake_data.topic,
+        question=mistake_data.question,
+        correct_answer=mistake_data.correct_answer,
+        student_answer=mistake_data.student_answer,
+        explanation=mistake_data.explanation
+    )
+    
+    db.add(mistake)
+    db.commit()
+    db.refresh(mistake)
+    
+    return mistake
+
+
+# IMPORTANT: Static routes must come BEFORE parameterized routes
+@router.get("/mistakes/stats", response_model=MistakeStats)
+def get_mistake_stats(
+    current_user: User = Depends(get_current_student),
+    db: Session = Depends(get_db)
+):
+    """Get mistake statistics for the current student."""
+    student_profile = current_user.student_profile
+    
+    from sqlalchemy import func
+    
+    total = db.query(Mistake).filter(
+        Mistake.student_id == student_profile.id
+    ).count()
+    
+    unresolved = db.query(Mistake).filter(
+        Mistake.student_id == student_profile.id,
+        Mistake.status == "unresolved"
+    ).count()
+    
+    reviewing = db.query(Mistake).filter(
+        Mistake.student_id == student_profile.id,
+        Mistake.status == "reviewing"
+    ).count()
+    
+    resolved = db.query(Mistake).filter(
+        Mistake.student_id == student_profile.id,
+        Mistake.status == "resolved"
+    ).count()
+    
+    # Group by subject
+    subject_counts = db.query(
+        Mistake.subject,
+        func.count(Mistake.id)
+    ).filter(
+        Mistake.student_id == student_profile.id
+    ).group_by(Mistake.subject).all()
+    
+    by_subject = {subject: count for subject, count in subject_counts}
+    
+    return MistakeStats(
+        total=total,
+        unresolved=unresolved,
+        reviewing=reviewing,
+        resolved=resolved,
+        by_subject=by_subject
+    )
+
+
+@router.get("/mistakes/{mistake_id}", response_model=MistakeResponse)
+def get_mistake(
+    mistake_id: int,
+    current_user: User = Depends(get_current_student),
+    db: Session = Depends(get_db)
+):
+    """Get a specific mistake."""
+    student_profile = current_user.student_profile
+    
+    mistake = db.query(Mistake).filter(
+        Mistake.id == mistake_id,
+        Mistake.student_id == student_profile.id
+    ).first()
+    
+    if not mistake:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Mistake not found"
+        )
+    
+    return mistake
+
+
+@router.put("/mistakes/{mistake_id}", response_model=MistakeResponse)
+def update_mistake(
+    mistake_id: int,
+    mistake_data: MistakeUpdate,
+    current_user: User = Depends(get_current_student),
+    db: Session = Depends(get_db)
+):
+    """Update a mistake."""
+    student_profile = current_user.student_profile
+    
+    mistake = db.query(Mistake).filter(
+        Mistake.id == mistake_id,
+        Mistake.student_id == student_profile.id
+    ).first()
+    
+    if not mistake:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Mistake not found"
+        )
+    
+    update_data = mistake_data.model_dump(exclude_unset=True)
+    
+    for field, value in update_data.items():
+        setattr(mistake, field, value)
+    
+    db.commit()
+    db.refresh(mistake)
+    
+    return mistake
+
+
+@router.delete("/mistakes/{mistake_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_mistake(
+    mistake_id: int,
+    current_user: User = Depends(get_current_student),
+    db: Session = Depends(get_db)
+):
+    """Delete a mistake."""
+    student_profile = current_user.student_profile
+    
+    mistake = db.query(Mistake).filter(
+        Mistake.id == mistake_id,
+        Mistake.student_id == student_profile.id
+    ).first()
+    
+    if not mistake:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Mistake not found"
+        )
+    
+    db.delete(mistake)
+    db.commit()
+    
+    return None
+
+
+# ==================== DASHBOARD ====================
+
+@router.get("/dashboard/stats", response_model=StudentDashboardStats)
+def get_dashboard_stats(
+    current_user: User = Depends(get_current_student),
+    db: Session = Depends(get_db)
+):
+    """Get dashboard statistics for the student."""
+    student_profile = current_user.student_profile
+    
+    # Count classes
+    total_classes = db.query(ClassEnrollment).filter(
+        ClassEnrollment.student_id == student_profile.id
+    ).count()
+    
+    # Count pending assignments
+    from sqlalchemy import func
+    
+    # Get all assignments for enrolled classes
+    enrollments = db.query(ClassEnrollment).filter(
+        ClassEnrollment.student_id == student_profile.id
+    ).all()
+    
+    class_ids = [e.class_id for e in enrollments]
+    
+    total_assignments = db.query(Assignment).filter(
+        Assignment.class_id.in_(class_ids)
+    ).count()
+    
+    # Count completed submissions
+    completed_assignments = db.query(Submission).filter(
+        Submission.student_id == student_profile.id,
+        Submission.status == "graded"
+    ).count()
+    
+    pending_assignments = total_assignments - completed_assignments
+    
+    # Count mistakes
+    total_mistakes = db.query(Mistake).filter(
+        Mistake.student_id == student_profile.id
+    ).count()
+    
+    unresolved_mistakes = db.query(Mistake).filter(
+        Mistake.student_id == student_profile.id,
+        Mistake.status == "unresolved"
+    ).count()
+    
+    return StudentDashboardStats(
+        total_classes=total_classes,
+        pending_assignments=pending_assignments,
+        completed_assignments=completed_assignments,
+        total_mistakes=total_mistakes,
+        unresolved_mistakes=unresolved_mistakes
+    )

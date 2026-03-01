@@ -1,14 +1,40 @@
-arxiv>=2.0.0
-requests>=2.31.0
+# ChurGPT Backend Dependencies
+
+# Web Framework
 fastapi>=0.115.0
-python-multipart>=0.0.9
 uvicorn[standard]>=0.30.0
-langgraph>=0.2.0
-langchain-openai>=0.1.0
-redis>=5.0.0
+python-multipart>=0.0.9
+
+# Database
 sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.9
+alembic>=1.12.0
+
+# Authentication & Security
+passlib[bcrypt]>=1.7.4
+python-jose[cryptography]>=3.3.0
+
+# Validation
+pydantic[email]>=2.0.0
+
+# Environment
 python-dotenv>=1.0.0
+
+# AI Services (optional)
+openai>=1.0.0
 anthropic>=0.40.0
-pytest>=8.0.0
-anthropic>=0.18.0
+langchain-openai>=0.1.0
+langgraph>=0.2.0
+
+# Cache & Storage
+redis>=5.0.0
+
+# External APIs
+requests>=2.31.0
+arxiv>=2.0.0
+
+# Utilities
 python-pptx>=0.6.21
+
+# Testing
+pytest>=8.0.0
