@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, BookOpen, Video, FileText, ExternalLink, MessageCircle, X, Send, Sparkles, Bot, User } from 'lucide-react';
 import type { PageType } from '@/types';
@@ -210,16 +211,20 @@ export default function HomeworkPage({ onPageChange }: HomeworkPageProps) {
         </div>
       </section>
 
-      {/* AI Chat Panel - Slides in from left */}
-      <AnimatePresence>
-        {isChatOpen && (
-          <motion.div
-            initial={{ x: -400, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -400, opacity: 0 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed left-4 bottom-24 w-[380px] h-[500px] bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden z-50 flex flex-col"
-          >
+      {/* AI agent portaled to body so fixed positioning is relative to viewport (avoids transformed ancestor in App) */}
+      {typeof document !== 'undefined' &&
+        document.body &&
+        createPortal(
+          <div className="fixed inset-0 z-[70] pointer-events-none" aria-hidden="false">
+            <AnimatePresence>
+              {isChatOpen && (
+                <motion.div
+                  initial={{ x: -400, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: -400, opacity: 0 }}
+                  transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                  className="fixed left-4 bottom-24 w-[380px] h-[500px] bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col pointer-events-auto"
+                >
             {/* Chat Header */}
             <div className="bg-gradient-to-r from-purple-600 to-pink-500 px-5 py-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -327,31 +332,34 @@ export default function HomeworkPage({ onPageChange }: HomeworkPageProps) {
             </div>
           </motion.div>
         )}
-      </AnimatePresence>
+            </AnimatePresence>
 
-      {/* Floating AI Button - Bottom Right */}
-      <motion.button
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 1, type: 'spring', stiffness: 200 }}
-        onClick={() => setIsChatOpen(!isChatOpen)}
-        className={`fixed right-6 bottom-6 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center z-50 transition-all duration-300 ${
-          isChatOpen 
-            ? 'bg-gray-900 rotate-90' 
-            : 'bg-gradient-to-r from-purple-600 to-pink-500 hover:shadow-purple-500/50 hover:scale-110'
-        }`}
-      >
-        {isChatOpen ? (
-          <X size={24} className="text-white" />
-        ) : (
-          <MessageCircle size={28} className="text-white" />
+            {/* Floating AI Button - Bottom Right */}
+            <motion.button
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 1, type: 'spring', stiffness: 200 }}
+              onClick={() => setIsChatOpen(!isChatOpen)}
+              className={`fixed right-6 bottom-6 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 pointer-events-auto ${
+                isChatOpen
+                  ? 'bg-gray-900 rotate-90'
+                  : 'bg-gradient-to-r from-purple-600 to-pink-500 hover:shadow-purple-500/50 hover:scale-110'
+              }`}
+            >
+              {isChatOpen ? (
+                <X size={24} className="text-white" />
+              ) : (
+                <MessageCircle size={28} className="text-white" />
+              )}
+
+              {/* Pulse animation when closed */}
+              {!isChatOpen && (
+                <span className="absolute inset-0 rounded-full bg-purple-600 animate-ping opacity-20" />
+              )}
+            </motion.button>
+          </div>,
+          document.body
         )}
-        
-        {/* Pulse animation when closed */}
-        {!isChatOpen && (
-          <span className="absolute inset-0 rounded-full bg-purple-600 animate-ping opacity-20" />
-        )}
-      </motion.button>
     </motion.div>
   );
 }
