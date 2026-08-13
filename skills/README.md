@@ -12,3 +12,9 @@ Current skills:
 - `intervene_console`
 - `config_manager`
 - `lesson_plan_generator`
+
+## Prompt-based skills
+
+These skills use an instruction manifest rather than a Python entrypoint:
+
+- `grill-me` — a relentless interview to sharpen a plan or design.
